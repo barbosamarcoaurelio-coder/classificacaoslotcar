@@ -389,7 +389,10 @@ def generate_export_html(classificacao_dict: Dict[str, Any]) -> str:
             if not ep.get("realizada", False):
                 val_str = '<span style="opacity:0.35;">-</span>'
             elif not ep.get("presente", False):
-                val_str = '<span style="opacity:0.6;">N</span>'
+                if ep.get("descartada", False):
+                    val_str = '<s style="opacity:0.5;">0</s>'
+                else:
+                    val_str = '<span style="opacity:0.75;">0</span>'
             else:
                 pts = ep.get("pontos", 0)
                 pos_etapa = ep.get("posicao")
@@ -477,7 +480,7 @@ def generate_export_html(classificacao_dict: Dict[str, Any]) -> str:
     {f'<span class="legend-item"><span class="box" style="background:#FFEBEE;border:1px solid #D32F2F;"></span> Zona de Rebaixamento (↓ {info["rebaixados"]})</span>' if info.get("rebaixados", 0) > 0 else ''}
     <span class="legend-item">% Subir / % Queda: Projeções de acesso e rebaixamento via Monte Carlo</span>
     <span class="legend-item"><s>Nº</s> = Etapa Descartada</span>
-    <span class="legend-item">N = Não correu (0 pts)</span>
+    <span class="legend-item">0 = Não correu (0 pts)</span>
     <span class="legend-item">×2 = Pontuação em dobro na última etapa</span>
   </div>
   <div class="flag-stripe">

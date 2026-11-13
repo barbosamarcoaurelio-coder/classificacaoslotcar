@@ -233,7 +233,10 @@ function renderClassificationTable(info) {
         return '<td><span class="stage-pending">-</span></td>';
       }
       if (!ep.presente) {
-        return '<td><span class="absent-mark">N</span></td>';
+        if (ep.descartada) {
+          return '<td><span class="discarded-pts"><s>0</s></span></td>';
+        }
+        return '<td><span class="absent-mark">0</span></td>';
       }
       const posStr = ep.posicao ? `<small class="stage-pos">(${ep.posicao}º)</small>` : '';
       if (ep.descartada) {
