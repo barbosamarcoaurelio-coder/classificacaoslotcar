@@ -1,7 +1,7 @@
 :root {
   --flag-black: #000000;
-  --flag-red: #DD0000;
-  --flag-yellow: #FFCE00;
+  --flag-red: #E10600;
+  --flag-yellow: #FFD000;
 
   --bg-app: #121212;
   --bg-card: #1c1c1e;
@@ -42,16 +42,17 @@ body {
   color: var(--text-main);
   min-height: 100vh;
   padding-bottom: calc(var(--nav-height) + 16px);
-  padding-top: var(--header-height);
+  padding-top: calc(var(--header-height) + 7px);
   overflow-x: hidden;
 }
 
 /* FAIXA BANDEIRA ALEMANHA */
 .flag-stripe {
   display: flex;
-  height: 5px;
+  height: 7px;
   width: 100%;
   z-index: 101;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .top-stripe {
@@ -73,12 +74,12 @@ body {
 /* HEADER */
 .app-header {
   position: fixed;
-  top: 5px;
+  top: 7px;
   left: 0;
   right: 0;
   height: var(--header-height);
   background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 2px solid #222224;
   z-index: 100;
   display: flex;
   align-items: center;
@@ -113,11 +114,12 @@ body {
 }
 
 .brand-title {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 900;
   color: var(--flag-yellow);
   letter-spacing: -0.3px;
   line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .brand-subtitle {
@@ -292,6 +294,8 @@ body {
   background: var(--flag-yellow);
   color: #000;
   border-color: var(--flag-yellow);
+  font-weight: 800;
+  box-shadow: 0 2px 10px rgba(255, 208, 0, 0.4);
 }
 
 /* INFO CARD */
@@ -304,6 +308,8 @@ body {
   padding: 10px 12px;
   margin-bottom: 14px;
   text-align: center;
+  border-top: 3px solid var(--flag-red);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .info-label {
@@ -350,11 +356,15 @@ body {
 .btn-primary {
   background: var(--flag-red);
   color: #fff;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(225, 6, 0, 0.35);
 }
 
 .btn-yellow {
   background: var(--flag-yellow);
   color: #000;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(255, 208, 0, 0.35);
 }
 
 .btn-outline {
@@ -401,7 +411,7 @@ table.ranking-table th {
   text-align: center;
   font-size: 12px;
   font-weight: 800;
-  border-bottom: 2px solid var(--flag-yellow);
+  border-bottom: 3px solid var(--flag-yellow);
 }
 
 table.ranking-table th.th-pilot {
@@ -570,37 +580,60 @@ table.ranking-table td.td-sem-desc {
   color: var(--text-muted);
 }
 
-/* DESTAQUES DA LINHA INTEIRA */
-/* 1º Lugar: Preto com texto amarelo/dourado */
+/* DESTAQUES DA LINHA INTEIRA (CORES ALEMANHA) */
+/* 1º Lugar: Preto com texto amarelo/dourado e borda esquerda ouro */
 tr.row-first {
-  background-color: #000000 !important;
-  color: #FFCE00 !important;
+  background: #000000 !important;
+  color: var(--flag-yellow) !important;
   font-weight: bold;
 }
 tr.row-first td {
-  border-bottom-color: #333 !important;
-  color: #FFCE00 !important;
+  border-bottom: 1px solid #333333 !important;
+  color: var(--flag-yellow) !important;
+}
+tr.row-first td:first-child {
+  border-left: 5px solid var(--flag-yellow);
+}
+tr.row-first td.td-pilot {
+  color: #ffffff !important;
+  font-weight: 800;
 }
 
-/* 2º Lugar: Vermelho */
+/* 2º Lugar: Vermelho vibrante da Alemanha */
 tr.row-second {
-  background-color: var(--flag-red) !important;
+  background: var(--flag-red) !important;
   color: #ffffff !important;
   font-weight: bold;
 }
 tr.row-second td {
-  border-bottom-color: #aa0000 !important;
+  border-bottom: 1px solid #990000 !important;
+  color: #ffffff !important;
+}
+tr.row-second td:first-child {
+  border-left: 5px solid #ffffff;
+}
+tr.row-second td.td-total,
+tr.row-second td.td-total-liquido {
+  background: rgba(0, 0, 0, 0.25) !important;
   color: #ffffff !important;
 }
 
-/* 3º Lugar: Amarelo */
+/* 3º Lugar: Amarelo Ouro com texto e detalhe preto */
 tr.row-third {
-  background-color: var(--flag-yellow) !important;
+  background: var(--flag-yellow) !important;
   color: #000000 !important;
   font-weight: bold;
 }
 tr.row-third td {
-  border-bottom-color: #ccaa00 !important;
+  border-bottom: 1px solid #cca300 !important;
+  color: #000000 !important;
+}
+tr.row-third td:first-child {
+  border-left: 5px solid #000000;
+}
+tr.row-third td.td-total,
+tr.row-third td.td-total-liquido {
+  background: rgba(0, 0, 0, 0.12) !important;
   color: #000000 !important;
 }
 
@@ -684,6 +717,7 @@ body.theme-light tr.row-relegation {
 .card-item {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
+  border-left: 4px solid var(--flag-red);
   border-radius: 12px;
   padding: 16px;
 }
@@ -773,6 +807,13 @@ body.theme-light tr.row-relegation {
 
 .nav-item.active {
   color: var(--flag-yellow);
+  font-weight: 800;
+  border-top: 3px solid var(--flag-yellow);
+  padding-top: 1px;
+}
+
+.nav-item.active .nav-icon {
+  transform: scale(1.12);
 }
 
 /* MODAIS */
