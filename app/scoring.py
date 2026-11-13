@@ -1,5 +1,108 @@
 import random
+import math
 from typing import Dict, List, Any, Optional
+
+def calculate_relegation_probabilities(
+    linhas: List[Dict[str, Any]],
+    total_etapas: int,
+    etapas_disputadas: int,
+    descartes_config: int,
+    dobro_ultima: bool,
+    pontos_por_pos: List[int],
+    qtd_rebaixados: int,
+    n_sim: int = 1000
+) -> Dict[str, float]:
+    """
+    Projeta o % de chance de cada piloto cair de divisão (rebaixamento)
+    utilizando simulação estocástica de Monte Carlo baseada no histórico
+    de desempenho dos pilotos e etapas restantes.
+    """
+    total_pilotos = len(linhas)
+    if qtd_rebaixados <= 0 or total_pilotos <= qtd_rebaixados:
+        return {l["piloto"]: 0.0 for l in linhas}
+        
+    etapas_restantes = total_etapas - etapas_disputadas
+    if etapas_restantes <= 0:
+        probs = {}
+        for l in linhas:
+            is_rebaixado = l["pos"] > (total_pilotos - qtd_rebaixados)
+            probs[l["piloto"]] = 100.0 if is_rebaixado else 0.0
+        return probs
+
+    perfis = {}
+    for l in linhas:
+        piloto = l["piloto"]
+        historico_pts = [
+            ep["pontos"] for ep in l["etapas"].values() if not ep.get("simulada", False)
+        ]
+        pts_presentes = [p for p in historico_pts if p > 0]
+        presencas = len(pts_presentes)
+        
+        taxa_presenca = max(0.40, presencas / max(1, etapas_disputadas))
+        if pts_presentes:
+            media_pts = sum(pts_presentes) / len(pts_presentes)
+            variance = sum((p - media_pts) ** 2 for p in pts_presentes) / len(pts_presentes)
+            desvio = max(2.5, math.sqrt(variance))
+        else:
+            media_pts = 10.0
+            desvio = 3.5
+            
+        perfis[piloto] = {
+            "historico": list(historico_pts),
+            "media": media_pts,
+            "desvio": desvio,
+            "taxa_presenca": taxa_presenca
+        }
+
+    descartes_final = min(descartes_config, max(0, total_etapas - 1))
+    relegation_counts = {l["piloto"]: 0 for l in linhas}
+    pilotos_lista = [l["piloto"] for l in linhas]
+
+    for _ in range(n_sim):
+        pontuacoes_finais_sim = {p: list(perfis[p]["historico"]) for p in pilotos_lista}
+        
+        for e in range(etapas_disputadas + 1, total_etapas + 1):
+            is_ultima = (e == total_etapas and dobro_ultima)
+            multiplicador = 2 if is_ultima else 1
+            
+            scores_etapa = []
+            for p in pilotos_lista:
+                prof = perfis[p]
+                if random.random() < prof["taxa_presenca"]:
+                    performance = random.gauss(prof["media"], prof["desvio"])
+                else:
+                    performance = -9999.0
+                scores_etapa.append((p, performance))
+                
+            scores_etapa.sort(key=lambda x: x[1], reverse=True)
+            
+            for pos_idx, (p, perf) in enumerate(scores_etapa):
+                if perf > -9000.0:
+                    pts = (pontos_por_pos[pos_idx] if pos_idx < len(pontos_por_pos) else 0) * multiplicador
+                else:
+                    pts = 0
+                pontuacoes_finais_sim[p].append(pts)
+                
+        linhas_sim = []
+        for p in pilotos_lista:
+            all_pts = pontuacoes_finais_sim[p]
+            tot_sem = sum(all_pts)
+            pts_ordenados = sorted(all_pts)
+            descartados = pts_ordenados[:descartes_final]
+            tot_com = tot_sem - sum(descartados)
+            linhas_sim.append({"piloto": p, "com": tot_com, "sem": tot_sem})
+            
+        linhas_sim.sort(key=lambda x: (-x["com"], -x["sem"], x["piloto"]))
+        
+        for rank, item in enumerate(linhas_sim, 1):
+            if rank > (total_pilotos - qtd_rebaixados):
+                relegation_counts[item["piloto"]] += 1
+                
+    probs = {}
+    for p in pilotos_lista:
+        p_pct = round((relegation_counts[p] / n_sim) * 100.0, 1)
+        probs[p] = p_pct
+    return probs
 
 def calculate_classification(
     camp: Dict[str, Any],
@@ -150,6 +253,19 @@ def calculate_classification(
             linha["status"] = "rebaixa"
         else:
             linha["status"] = "normal"
+
+    # Calcular projeção estatística de rebaixamento (% de chance de queda)
+    probs_queda = calculate_relegation_probabilities(
+        linhas=linhas,
+        total_etapas=total_etapas_campeonato,
+        etapas_disputadas=num_etapas_disputadas,
+        descartes_config=descartes_config,
+        dobro_ultima=dobro_ultima,
+        pontos_por_pos=pontos_por_pos,
+        qtd_rebaixados=qtd_rebaixados
+    )
+    for l in linhas:
+        l["chance_rebaixamento"] = probs_queda.get(l["piloto"], 0.0)
             
     lista_etapas_info = []
     for r in resultados_sub:
@@ -195,6 +311,7 @@ def generate_export_html(classificacao_dict: Dict[str, Any]) -> str:
         piloto = l["piloto"]
         com_desc = l["total_com_descarte"]
         sem_desc = l["total_sem_descarte"]
+        chance_queda = l.get("chance_rebaixamento", 0.0)
         status = l.get("status", "normal")
         
         # Cores de destaque
@@ -218,6 +335,16 @@ def generate_export_html(classificacao_dict: Dict[str, Any]) -> str:
             row_style += "background-color:#FFEBEE;color:#B71C1C;"
             badge_icon = ' <span style="color:#D32F2F;font-weight:bold;">↓</span>'
             
+        # Cor do % Queda
+        if chance_queda >= 60.0:
+            queda_color = "#D32F2F;font-weight:bold;"
+        elif chance_queda >= 25.0:
+            queda_color = "#E65100;font-weight:bold;"
+        elif chance_queda > 0.0:
+            queda_color = "#2E7D32;"
+        else:
+            queda_color = "opacity:0.6;"
+            
         cells_etapas = []
         for e in etapas_info:
             eid = e["etapa"]
@@ -237,8 +364,9 @@ def generate_export_html(classificacao_dict: Dict[str, Any]) -> str:
         <tr style="{row_style}">
             <td style="padding:8px;text-align:center;font-weight:bold;">{pos}º</td>
             <td style="padding:8px;font-weight:600;color:{text_color};">{piloto}{badge_icon}</td>
+            <td style="padding:8px;text-align:center;font-size:13px;font-weight:bold;">{sem_desc}</td>
             <td style="padding:8px;text-align:center;font-size:15px;font-weight:900;background:rgba(0,0,0,0.06);">{com_desc}</td>
-            <td style="padding:8px;text-align:center;font-size:12px;opacity:0.85;">{sem_desc}</td>
+            <td style="padding:8px;text-align:center;font-size:12px;color:{queda_color};">{chance_queda}%</td>
             {tds_e}
         </tr>
         ''')
@@ -253,7 +381,7 @@ def generate_export_html(classificacao_dict: Dict[str, Any]) -> str:
 <title>{info["campeonato"]} - {info["subdivisao"]} - Classificação</title>
 <style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 16px; background: #f8f9fa; color: #212529; }}
-  .container {{ max-width: 900px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
+  .container {{ max-width: 960px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
   .flag-stripe {{ display: flex; height: 6px; }}
   .stripe-black {{ flex: 1; background: #000000; }}
   .stripe-red {{ flex: 1; background: #DD0000; }}
@@ -287,8 +415,9 @@ def generate_export_html(classificacao_dict: Dict[str, Any]) -> str:
         <tr>
           <th style="padding:10px 8px;text-align:center;border:1px solid #444;width:40px;">Pos</th>
           <th style="padding:10px 8px;text-align:left;border:1px solid #444;">Piloto</th>
-          <th style="padding:10px 8px;text-align:center;border:1px solid #444;background:#333;color:#FFCE00;">TOTAL</th>
-          <th style="padding:10px 8px;text-align:center;border:1px solid #444;">Sem Desc.</th>
+          <th style="padding:10px 8px;text-align:center;border:1px solid #444;">Total</th>
+          <th style="padding:10px 8px;text-align:center;border:1px solid #444;background:#333;color:#FFCE00;">Total com Descarte</th>
+          <th style="padding:10px 8px;text-align:center;border:1px solid #444;color:#ff9800;">% Queda</th>
           {etapas_th}
         </tr>
       </thead>
@@ -303,8 +432,11 @@ def generate_export_html(classificacao_dict: Dict[str, Any]) -> str:
     <span class="legend-item"><span class="box" style="background:#FFCE00;"></span> 3º Lugar</span>
     {f'<span class="legend-item"><span class="box" style="background:#FFF9C4;border:1px solid #F57F17;"></span> Zona de Acesso (↑ {info["sobem"]})</span>' if info.get("sobem", 0) > 0 else ''}
     {f'<span class="legend-item"><span class="box" style="background:#FFEBEE;border:1px solid #D32F2F;"></span> Zona de Rebaixamento (↓ {info["rebaixados"]})</span>' if info.get("rebaixados", 0) > 0 else ''}
+    <span class="legend-item">% Queda: Projeção de risco de rebaixamento via simulação Monte Carlo</span>
     <span class="legend-item"><s>Nº</s> = Etapa Descartada</span>
     <span class="legend-item">N = Não correu (0 pts)</span>
+    <span class="legend-item">×2 = Pontuação em dobro na última etapa</span>
+  </div>
     <span class="legend-item">×2 = Pontuação em dobro na última etapa</span>
   </div>
   <div class="flag-stripe">

@@ -191,6 +191,13 @@ function renderClassificationTable(info) {
       badge = ' <span style="color:#D32F2F;font-weight:bold;">↓</span>';
     }
 
+    const chance = l.chance_rebaixamento !== undefined ? l.chance_rebaixamento : 0;
+    let badgeClass = "risk-low";
+    if (chance >= 60) badgeClass = "risk-high";
+    else if (chance >= 25) badgeClass = "risk-medium";
+    else if (chance === 0) badgeClass = "risk-zero";
+    const quedaBadge = `<span class="risk-badge ${badgeClass}">${chance}%</span>`;
+
     const cellsEtapas = info.etapas_info.map(e => {
       const ep = l.etapas[e.etapa] || {};
       if (!ep.presente) {
@@ -206,8 +213,9 @@ function renderClassificationTable(info) {
       <tr class="${rowClass}">
         <td style="font-weight:bold;">${l.pos}º</td>
         <td class="td-pilot">${l.piloto}${badge}</td>
+        <td class="td-total-bruto">${l.total_sem_descarte}</td>
         <td class="td-total">${l.total_com_descarte}</td>
-        <td class="td-sem-desc">${l.total_sem_descarte}</td>
+        <td class="td-relegation-risk">${quedaBadge}</td>
         ${cellsEtapas}
       </tr>
     `;
@@ -219,8 +227,9 @@ function renderClassificationTable(info) {
         <tr>
           <th style="width:40px;">Pos</th>
           <th class="th-pilot">Piloto</th>
-          <th class="th-total">TOTAL</th>
-          <th>Sem Desc.</th>
+          <th>Total</th>
+          <th class="th-total">Total com Descarte</th>
+          <th class="th-relegation-risk">% Queda</th>
           ${etapasTh}
         </tr>
       </thead>

@@ -431,6 +431,60 @@ body.theme-light table.ranking-table td.td-total {
   color: #000;
 }
 
+table.ranking-table td.td-total-bruto {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.td-relegation-risk {
+  font-size: 11px;
+}
+
+.risk-badge {
+  display: inline-block;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.risk-high {
+  background: rgba(221, 0, 0, 0.2);
+  color: #ff5252;
+  border: 1px solid rgba(221, 0, 0, 0.4);
+}
+body.theme-light .risk-high {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.risk-medium {
+  background: rgba(255, 152, 0, 0.2);
+  color: #ffb74d;
+  border: 1px solid rgba(255, 152, 0, 0.4);
+}
+body.theme-light .risk-medium {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.risk-low {
+  background: rgba(76, 175, 80, 0.15);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+body.theme-light .risk-low {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.risk-zero {
+  opacity: 0.45;
+  color: var(--text-muted);
+}
+
 table.ranking-table td.td-sem-desc {
   font-size: 11px;
   color: var(--text-muted);
