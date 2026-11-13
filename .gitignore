@@ -30,3 +30,5 @@ __pycache__/
 # Logs e arquivos temporários
 *.log
 *.tmp
+*.db
+*.sqlite3
