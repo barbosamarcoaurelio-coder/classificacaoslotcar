@@ -431,11 +431,71 @@ body.theme-light table.ranking-table td.td-total {
   color: #000;
 }
 
+table.ranking-table th.th-total-col,
+table.ranking-table td.td-total-col {
+  width: 82px;
+  min-width: 82px;
+  max-width: 82px;
+  text-align: center;
+}
+
+table.ranking-table th.th-total-header {
+  line-height: 1.15;
+  background: #1a1a1a;
+  color: var(--flag-yellow);
+  font-size: 11px;
+}
+
 table.ranking-table td.td-total-bruto {
   font-size: 13px;
   font-weight: 700;
   color: var(--text-main);
   background: rgba(255, 255, 255, 0.02);
+}
+
+table.ranking-table td.td-total-liquido {
+  font-size: 14px;
+  font-weight: 900;
+  background: rgba(255, 206, 0, 0.08);
+  color: var(--flag-yellow);
+}
+
+body.theme-light table.ranking-table td.td-total-liquido {
+  background: rgba(0, 0, 0, 0.05);
+  color: #000;
+}
+
+table.ranking-table th.th-prob,
+table.ranking-table td.td-prob {
+  width: 66px;
+  min-width: 66px;
+  max-width: 66px;
+  text-align: center;
+}
+
+.prob-up-high {
+  background: rgba(46, 125, 50, 0.25);
+  color: #81c784;
+  border: 1px solid rgba(46, 125, 50, 0.45);
+}
+body.theme-light .prob-up-high {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.prob-up-med {
+  background: rgba(21, 101, 192, 0.2);
+  color: #90caf9;
+  border: 1px solid rgba(21, 101, 192, 0.4);
+}
+body.theme-light .prob-up-med {
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+.prob-up-low {
+  background: rgba(46, 125, 50, 0.12);
+  color: #a5d6a7;
 }
 
 .td-relegation-risk {

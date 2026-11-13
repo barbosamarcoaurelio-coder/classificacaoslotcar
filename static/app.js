@@ -210,12 +210,20 @@ function renderClassificationTable(info) {
       badge = ' <span style="color:#D32F2F;font-weight:bold;">↓</span>';
     }
 
-    const chance = l.chance_rebaixamento !== undefined ? l.chance_rebaixamento : 0;
-    let badgeClass = "risk-low";
-    if (chance >= 60) badgeClass = "risk-high";
-    else if (chance >= 25) badgeClass = "risk-medium";
-    else if (chance === 0) badgeClass = "risk-zero";
-    const quedaBadge = `<span class="risk-badge ${badgeClass}">${chance}%</span>`;
+    // Badges de Probabilidade de Subir e Cair
+    const chanceSubir = l.chance_acesso !== undefined ? l.chance_acesso : 0;
+    let badgeSubirClass = "risk-zero";
+    if (chanceSubir >= 60) badgeSubirClass = "prob-up-high";
+    else if (chanceSubir >= 25) badgeSubirClass = "prob-up-med";
+    else if (chanceSubir > 0) badgeSubirClass = "prob-up-low";
+    const subirBadge = `<span class="risk-badge ${badgeSubirClass}">${chanceSubir}%</span>`;
+
+    const chanceQueda = l.chance_rebaixamento !== undefined ? l.chance_rebaixamento : 0;
+    let badgeQuedaClass = "risk-zero";
+    if (chanceQueda >= 60) badgeQuedaClass = "risk-high";
+    else if (chanceQueda >= 25) badgeQuedaClass = "risk-medium";
+    else if (chanceQueda > 0) badgeQuedaClass = "risk-low";
+    const quedaBadge = `<span class="risk-badge ${badgeQuedaClass}">${chanceQueda}%</span>`;
 
     const cellsEtapas = info.etapas_info.map(e => {
       const ep = l.etapas[e.etapa] || {};
@@ -236,9 +244,10 @@ function renderClassificationTable(info) {
       <tr class="${rowClass}">
         <td style="font-weight:bold;">${l.pos}º</td>
         <td class="td-pilot">${l.piloto}${badge}</td>
-        <td class="td-total-bruto">${l.total_sem_descarte}</td>
-        <td class="td-total">${l.total_com_descarte}</td>
-        <td class="td-relegation-risk">${quedaBadge}</td>
+        <td class="td-total-col td-total-bruto">${l.total_sem_descarte}</td>
+        <td class="td-total-col td-total-liquido">${l.total_com_descarte}</td>
+        <td class="td-prob">${subirBadge}</td>
+        <td class="td-prob">${quedaBadge}</td>
         ${cellsEtapas}
       </tr>
     `;
@@ -250,9 +259,10 @@ function renderClassificationTable(info) {
         <tr>
           <th style="width:40px;">Pos</th>
           <th class="th-pilot">Piloto</th>
-          <th>Total</th>
-          <th class="th-total">Total com Descarte</th>
-          <th class="th-relegation-risk">% Queda</th>
+          <th class="th-total-col">Total</th>
+          <th class="th-total-col th-total-header">Total<br>c/ Descarte</th>
+          <th class="th-prob">% Subir</th>
+          <th class="th-prob">% Queda</th>
           ${etapasTh}
         </tr>
       </thead>
@@ -505,17 +515,6 @@ function setupEventListeners() {
     state.selectedCampId = parseInt(e.target.value);
     localStorage.setItem("gt_selected_camp", state.selectedCampId);
     updateSubdivPills();
-    loadClassification();
-  });
-
-  // Simulação
-  document.getElementById("btnSimulate")?.addEventListener("click", () => {
-    state.isSimulating = true;
-    loadClassification();
-  });
-
-  document.getElementById("btnExitSim")?.addEventListener("click", () => {
-    state.isSimulating = false;
     loadClassification();
   });
 
