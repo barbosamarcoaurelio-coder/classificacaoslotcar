@@ -100,6 +100,14 @@ body {
   gap: 10px;
 }
 
+.brand-logo-img {
+  height: 38px;
+  width: auto;
+  border-radius: 6px;
+  object-fit: contain;
+}
+}
+
 .brand-logo {
   font-size: 24px;
 }
