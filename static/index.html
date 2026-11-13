@@ -4,11 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Classificação Geral · GT Racing Slot Car</title>
-  <meta name="theme-color" content="#111111">
+  <meta name="theme-color" content="#121212">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="stylesheet" href="/static/style.css?v=2">
-  <link rel="icon" type="image/x-icon" href="https://gtautomodelismo.blogspot.com/favicon.ico">
+  <meta name="apple-mobile-web-app-title" content="GT Racing">
+  <meta name="application-name" content="GT Racing">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- PWA Manifest & Ícones -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/static/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="/static/icon-512.png">
+
+  <link rel="stylesheet" href="/static/style.css?v=3">
 </head>
 <body class="theme-dark">
 
@@ -457,5 +467,12 @@
   </div>
 
   <script src="/static/app.js?v=3"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

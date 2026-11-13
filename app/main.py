@@ -63,6 +63,18 @@ def index_page():
             return f.read()
     return "<h1>Classificação Geral · GT Racing Slot Car</h1>"
 
+@app.get("/manifest.json")
+def pwa_manifest():
+    return FileResponse(os.path.join(STATIC_DIR, "manifest.json"), media_type="application/manifest+json")
+
+@app.get("/sw.js")
+def service_worker():
+    return FileResponse(os.path.join(STATIC_DIR, "sw.js"), media_type="application/javascript")
+
+@app.get("/apple-touch-icon.png")
+def apple_icon():
+    return FileResponse(os.path.join(STATIC_DIR, "apple-touch-icon.png"), media_type="image/png")
+
 @app.get("/health")
 def health_check():
     return {"status": "ok", "app": "GT Racing Slot Car", "time": datetime.now().isoformat()}
