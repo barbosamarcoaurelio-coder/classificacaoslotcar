@@ -181,12 +181,14 @@ function renderClassificationTable(info) {
   document.getElementById("infoEtapas").textContent = `${info.etapas_disputadas}/${info.total_etapas}`;
   document.getElementById("infoDescartes").textContent = `${info.descartes_aplicados} (de ${info.descartes_configurados})`;
 
-  // Banner de Simulação
+  // Banner de Simulação (se existir no DOM)
   const simBanner = document.getElementById("simBanner");
-  if (info.simulacao) {
-    simBanner.classList.remove("hidden");
-  } else {
-    simBanner.classList.add("hidden");
+  if (simBanner) {
+    if (info.simulacao) {
+      simBanner.classList.remove("hidden");
+    } else {
+      simBanner.classList.add("hidden");
+    }
   }
 
   // Cabeçalhos das Etapas (todas do campeonato, incluindo faltantes)

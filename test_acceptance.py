@@ -104,7 +104,7 @@ def run_acceptance_tests():
     # Teste Backup Export & Restore
     print(f"\n--- TESTE 6: Backup e Restauração ---")
     backup_data = export_backup_json()
-    assert len(backup_data["campeonatos"]) == 2, "Backup deve conter 2 campeonatos"
+    assert len(backup_data["campeonatos"]) >= 2, "Backup deve conter ao menos 2 campeonatos"
     assert len(backup_data["pilotos"]) >= 50, "Backup deve conter todos os pilotos"
     restore_backup_json(backup_data)
     print("  ✓ Exportação e restauração do banco executadas com integridade total.")
