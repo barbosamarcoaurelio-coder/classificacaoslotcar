@@ -33,7 +33,8 @@ def calculate_relegation_probabilities(
     for l in linhas:
         piloto = l["piloto"]
         historico_pts = [
-            ep["pontos"] for ep in l["etapas"].values() if not ep.get("simulada", False)
+            ep["pontos"] for ep in l["etapas"].values() 
+            if ep.get("realizada") and not ep.get("simulada", False) and ep.get("pontos") is not None
         ]
         pts_presentes = [p for p in historico_pts if p > 0]
         presencas = len(pts_presentes)
@@ -186,42 +187,61 @@ def calculate_classification(
     qtd_rebaixados = sub_config.get("rebaixados", 0)
     tempo_de_corte = sub_config.get("tempo_de_corte")
     
+    # Dicionário de resultados indexado por número de etapa
+    res_por_etapa = {r["etapa"]: r for r in resultados_sub}
+    
     linhas = []
     for piloto in pilotos_na_sub:
         etapas_pontos = {}
         valores_pontos = []
         
-        for r in resultados_sub:
-            etapa_num = r["etapa"]
-            ordem = r.get("ordem_de_chegada", [])
-            is_ultima = (etapa_num == total_etapas_campeonato and dobro_ultima)
+        for e_num in range(1, total_etapas_campeonato + 1):
+            is_ultima = (e_num == total_etapas_campeonato and dobro_ultima)
             multiplicador = 2 if is_ultima else 1
             
-            if piloto in ordem:
-                pos = ordem.index(piloto) + 1
-                if pos <= len(pontos_por_pos):
-                    pts = pontos_por_pos[pos - 1] * multiplicador
+            if e_num in res_por_etapa:
+                r = res_por_etapa[e_num]
+                ordem = r.get("ordem_de_chegada", [])
+                
+                if piloto in ordem:
+                    pos = ordem.index(piloto) + 1
+                    if pos <= len(pontos_por_pos):
+                        pts = pontos_por_pos[pos - 1] * multiplicador
+                    else:
+                        pts = 0
+                    presente = True
                 else:
                     pts = 0
-                presente = True
+                    presente = False
+                    pos = None
+                    
+                etapas_pontos[e_num] = {
+                    "etapa": e_num,
+                    "realizada": True,
+                    "presente": presente,
+                    "posicao": pos,
+                    "pontos": pts,
+                    "descartada": False,
+                    "is_ultima": is_ultima,
+                    "simulada": r.get("simulada", False)
+                }
+                valores_pontos.append((pts, e_num))
             else:
-                pts = 0
-                presente = False
-                pos = None
-                
-            etapas_pontos[etapa_num] = {
-                "pontos": pts,
-                "presente": presente,
-                "posicao": pos,
-                "descartada": False,
-                "is_ultima": is_ultima,
-                "simulada": r.get("simulada", False)
-            }
-            valores_pontos.append((pts, etapa_num))
+                # Etapa faltante (ainda não disputada)
+                etapas_pontos[e_num] = {
+                    "etapa": e_num,
+                    "realizada": False,
+                    "presente": False,
+                    "posicao": None,
+                    "pontos": None,
+                    "descartada": False,
+                    "is_ultima": is_ultima,
+                    "simulada": False
+                }
             
-        total_sem_descarte = sum(ep["pontos"] for ep in etapas_pontos.values())
+        total_sem_descarte = sum(ep["pontos"] for ep in etapas_pontos.values() if ep.get("realizada") and ep["pontos"] is not None)
         
-        # Descartes: menores pontuações
+        # Descartes: menores pontuações das etapas realizadas
         valores_ordenados = sorted(valores_pontos, key=lambda x: (x[0], x[1]))
         descartados = valores_ordenados[:num_descartes]
         descartados_ids = [x[1] for x in descartados]
@@ -230,7 +250,7 @@ def calculate_classification(
             etapas_pontos[etapa_id]["descartada"] = True
             
         total_com_descarte = sum(
-            ep["pontos"] for eid, ep in etapas_pontos.items() if not ep["descartada"]
+            ep["pontos"] for eid, ep in etapas_pontos.items() if ep.get("realizada") and ep["pontos"] is not None and not ep["descartada"]
         )
         
         linhas.append({
@@ -268,12 +288,16 @@ def calculate_classification(
         l["chance_rebaixamento"] = probs_queda.get(l["piloto"], 0.0)
             
     lista_etapas_info = []
-    for r in resultados_sub:
+    datas_camp = camp.get("datas_das_etapas", [])
+    for e_num in range(1, total_etapas_campeonato + 1):
+        dt_str = datas_camp[e_num - 1] if len(datas_camp) >= e_num else ""
+        r_item = res_por_etapa.get(e_num)
         lista_etapas_info.append({
-            "etapa": r["etapa"],
-            "data": r.get("data", ""),
-            "is_ultima": (r["etapa"] == total_etapas_campeonato and dobro_ultima),
-            "simulada": r.get("simulada", False)
+            "etapa": e_num,
+            "data": dt_str,
+            "realizada": (e_num in res_por_etapa),
+            "is_ultima": (e_num == total_etapas_campeonato and dobro_ultima),
+            "simulada": r_item.get("simulada", False) if r_item else False
         })
         
     return {
@@ -349,14 +373,18 @@ def generate_export_html(classificacao_dict: Dict[str, Any]) -> str:
         for e in etapas_info:
             eid = e["etapa"]
             ep = l["etapas"].get(eid, {})
-            if not ep.get("presente", False):
+            if not ep.get("realizada", False):
+                val_str = '<span style="opacity:0.35;">-</span>'
+            elif not ep.get("presente", False):
                 val_str = '<span style="opacity:0.6;">N</span>'
             else:
                 pts = ep.get("pontos", 0)
+                pos_etapa = ep.get("posicao")
+                pos_str = f'<small style="font-size:10px;opacity:0.8;">({pos_etapa}º)</small>' if pos_etapa else ''
                 if ep.get("descartada", False):
-                    val_str = f'<s style="opacity:0.5;">{pts}</s>'
+                    val_str = f'<s style="opacity:0.5;">{pts}</s> {pos_str}'
                 else:
-                    val_str = f'<strong>{pts}</strong>'
+                    val_str = f'<strong>{pts}</strong> {pos_str}'
             cells_etapas.append(f'<td style="padding:8px 4px;text-align:center;border:1px solid #ddd;font-size:12px;">{val_str}</td>')
             
         tds_e = "".join(cells_etapas)

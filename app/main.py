@@ -179,6 +179,9 @@ def get_classification(
     c.execute("SELECT * FROM championships WHERE id = ?", (championship_id,))
     row = c.fetchone()
     if not row:
+        c.execute("SELECT * FROM championships ORDER BY id ASC LIMIT 1")
+        row = c.fetchone()
+    if not row:
         conn.close()
         raise HTTPException(status_code=404, detail="Campeonato não encontrado.")
         

@@ -485,6 +485,18 @@ body.theme-light .risk-low {
   color: var(--text-muted);
 }
 
+.stage-pos {
+  font-size: 10px;
+  opacity: 0.75;
+  margin-left: 2px;
+}
+
+.stage-pending {
+  color: var(--text-muted);
+  opacity: 0.35;
+  font-weight: 400;
+}
+
 table.ranking-table td.td-sem-desc {
   font-size: 11px;
   color: var(--text-muted);

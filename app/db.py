@@ -242,6 +242,10 @@ def restore_backup_json(data: Dict[str, Any]):
     c.execute("DELETE FROM scoring_tables")
     c.execute("DELETE FROM pilots")
     c.execute("DELETE FROM championships")
+    try:
+        c.execute("DELETE FROM sqlite_sequence")
+    except Exception:
+        pass
     
     # Categorias
     for cat in data.get("categorias", []):

@@ -87,7 +87,26 @@ async function loadInitialData() {
       state.data = await res.json();
       populateChampionshipSelect();
       if (state.data.championships.length > 0) {
-        state.selectedCampId = state.data.championships[0].id;
+        const stored = localStorage.getItem("gt_selected_camp");
+        const found = state.data.championships.find(c => c.id == stored);
+        if (found) {
+          state.selectedCampId = found.id;
+        } else {
+          // Selecionar por padrão o campeonato com mais etapas carregadas
+          let maxEtapas = -1;
+          let best = state.data.championships[0];
+          state.data.championships.forEach(c => {
+            let total = 0;
+            Object.values(c.resultados).forEach(arr => total += arr.length);
+            if (total > maxEtapas) {
+              maxEtapas = total;
+              best = c;
+            }
+          });
+          state.selectedCampId = best.id;
+        }
+        const sel = document.getElementById("selectChampionship");
+        if (sel) sel.value = state.selectedCampId;
         updateSubdivPills();
         await loadClassification();
       }
@@ -170,7 +189,7 @@ function renderClassificationTable(info) {
     simBanner.classList.add("hidden");
   }
 
-  // Cabeçalhos das Etapas
+  // Cabeçalhos das Etapas (todas do campeonato, incluindo faltantes)
   const etapasTh = info.etapas_info.map(e => `
     <th>E${e.etapa}${e.is_ultima ? ' <span class="font-double">×2</span>' : ''}${e.simulada ? ' <span style="font-size:9px;">🎲</span>' : ''}</th>
   `).join("");
@@ -200,13 +219,17 @@ function renderClassificationTable(info) {
 
     const cellsEtapas = info.etapas_info.map(e => {
       const ep = l.etapas[e.etapa] || {};
+      if (!ep.realizada) {
+        return '<td><span class="stage-pending">-</span></td>';
+      }
       if (!ep.presente) {
         return '<td><span class="absent-mark">N</span></td>';
       }
+      const posStr = ep.posicao ? `<small class="stage-pos">(${ep.posicao}º)</small>` : '';
       if (ep.descartada) {
-        return `<td><span class="discarded-pts"><s>${ep.pontos}</s></span></td>`;
+        return `<td><span class="discarded-pts"><s>${ep.pontos}</s></span> ${posStr}</td>`;
       }
-      return `<td><strong>${ep.pontos}</strong></td>`;
+      return `<td><strong>${ep.pontos}</strong> ${posStr}</td>`;
     }).join("");
 
     return `
@@ -480,6 +503,7 @@ function setupEventListeners() {
   // Mudança de Campeonato
   document.getElementById("selectChampionship")?.addEventListener("change", (e) => {
     state.selectedCampId = parseInt(e.target.value);
+    localStorage.setItem("gt_selected_camp", state.selectedCampId);
     updateSubdivPills();
     loadClassification();
   });
