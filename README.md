@@ -60,6 +60,9 @@ Na **Classificação**, o seletor mostra somente campeonatos **Em andamento**.
 Se o campeonato selecionado for encerrado, outro em andamento é selecionado.
 Sem campeonatos em andamento, a tela informa isso e desativa o lançamento de etapas.
 Os encerrados continuam listados na aba **Campeonatos**.
+Cada coluna de etapa mostra a data em **DD-MM**, abaixo de E1, E2 etc.
+Etapas realizadas usam a data do resultado; futuras mostram a previsão do calendário.
+Sem data informada, aparece **--**.
 
 Os participantes da classificação são identificados pelos resultados do próprio
 campeonato e subdivisão, não pelas categorias do cadastro do piloto. O piloto só

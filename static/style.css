@@ -432,6 +432,13 @@ table.ranking-table th.th-pilot {
   padding-left: 12px;
 }
 
+.stage-date {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 400;
+}
+
 table.ranking-table th.th-total {
   background: #1a1a1a;
   color: var(--flag-yellow);

@@ -274,8 +274,10 @@ def calculate_classification(
     lista_etapas_info = []
     datas_camp = camp.get("datas_das_etapas", [])
     for e_num in range(1, total_etapas_campeonato + 1):
-        dt_str = datas_camp[e_num - 1] if len(datas_camp) >= e_num else ""
         r_item = res_por_etapa.get(e_num)
+        dt_str = r_item.get("data", "") if r_item else (
+            datas_camp[e_num - 1] if len(datas_camp) >= e_num else ""
+        )
         lista_etapas_info.append({
             "etapa": e_num,
             "data": dt_str,

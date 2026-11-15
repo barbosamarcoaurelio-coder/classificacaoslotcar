@@ -1,8 +1,8 @@
-const CACHE_NAME = "gtracing-pwa-v6-em-andamento";
+const CACHE_NAME = "gtracing-pwa-v7-datas-etapas";
 const STATIC_ASSETS = [
   "/",
-  "/static/style.css?v=4",
-  "/static/app.js?v=8",
+  "/static/style.css?v=5",
+  "/static/app.js?v=9",
   "/static/manifest.json",
   "/static/icon-192.png",
   "/static/icon-512.png",

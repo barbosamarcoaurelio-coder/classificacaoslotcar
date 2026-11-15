@@ -161,6 +161,19 @@ class RankingCalculationTests(unittest.TestCase):
 
 
 class ChampionshipParticipationTests(unittest.TestCase):
+    def test_stage_dates_use_actual_results_instead_of_rescheduled_calendar(self):
+        camp = championship(
+            etapas=3, datas_das_etapas=["2026-08-04", "2026-08-11", ""],
+            resultados={"GT1": [stage(1, ["Ana"], "2026-08-06")]},
+        )
+        result = calculate_classification(camp, "GT1", TABLES[0])
+        self.assertEqual(
+            [stage["data"] for stage in result["etapas_info"]],
+            ["2026-08-06", "2026-08-11", ""],
+        )
+        self.assertTrue(result["etapas_info"][0]["realizada"])
+        self.assertFalse(result["etapas_info"][1]["realizada"])
+
     def test_zero_points_and_absences_preserve_actual_participants(self):
         camp = championship(
             etapas=2, ultima_etapa_em_dobro=False,

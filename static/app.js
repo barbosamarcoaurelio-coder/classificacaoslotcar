@@ -276,9 +276,13 @@ function renderClassificationTable(info) {
   }
 
   // Cabeçalhos das Etapas (todas do campeonato, incluindo faltantes)
-  const etapasTh = info.etapas_info.map(e => `
-    <th>E${e.etapa}${e.is_ultima ? ' <span class="font-double">×2</span>' : ''}${e.simulada ? ' <span style="font-size:9px;">🎲</span>' : ''}</th>
-  `).join("");
+  const etapasTh = info.etapas_info.map(e => {
+    const date = /^(\d{4})-(\d{2})-(\d{2})$/.exec(e.data || "");
+    const dateLabel = date ? `${date[3]}-${date[2]}` : "--";
+    const dateTitle = date ? (e.realizada && !e.simulada ? "Data da corrida" : "Data prevista") : "Data não informada";
+    return `<th>E${e.etapa}${e.is_ultima ? ' <span class="font-double">×2</span>' : ''}${e.simulada ? ' <span style="font-size:9px;">🎲</span>' : ''}
+      <span class="stage-date" title="${dateTitle}">${dateLabel}</span></th>`;
+  }).join("");
 
   // Linhas dos Pilotos
   const rows = info.classificacao.map(l => {
