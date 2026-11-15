@@ -798,6 +798,7 @@ body.theme-light tr.row-relegation {
 
 .nav-item {
   flex: 1;
+  min-width: 0;
   height: 100%;
   background: transparent;
   border: none;
@@ -816,9 +817,71 @@ body.theme-light tr.row-relegation {
 }
 
 .nav-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.ranking-help {
+  margin: 16px 0;
+  line-height: 1.5;
+}
+
+.ranking-help summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 10px 0;
+}
+
+.ranking-help p {
+  margin-bottom: 12px;
+}
+
+#tabRanking h2 {
+  margin-bottom: 8px;
+}
+
+#tabRanking .form-group {
+  margin-top: 16px;
+}
+
+#rankingTableWrapper {
+  padding: 8px;
+}
+
+.pilot-ranking-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.pilot-ranking-table caption {
+  text-align: left;
+  font-weight: 700;
+  padding: 8px 0 16px;
+}
+
+.pilot-ranking-table th,
+.pilot-ranking-table td {
+  padding: 12px 4px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+}
+
+.pilot-ranking-table th:first-child {
+  width: 12%;
+}
+
+.pilot-ranking-table th:nth-child(2) {
+  width: 40%;
+}
+
+.pilot-ranking-table td:nth-child(2) {
+  text-align: left;
 }
 
 .nav-item.active {

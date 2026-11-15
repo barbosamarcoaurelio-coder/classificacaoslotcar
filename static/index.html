@@ -18,7 +18,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/static/icon-192.png">
   <link rel="apple-touch-icon" sizes="512x512" href="/static/icon-512.png">
 
-  <link rel="stylesheet" href="/static/style.css?v=3">
+  <link rel="stylesheet" href="/static/style.css?v=4">
 </head>
 <body class="theme-dark">
 
@@ -121,6 +121,44 @@
       </div>
     </section>
 
+    <section id="tabRanking" class="tab-panel">
+      <div class="panel-header">
+        <h2>Ranking de Pilotos</h2>
+        <p class="text-muted">Rumo à Copa dos Campeões · Resultados desde 01/08/2026</p>
+        <div class="form-group">
+          <label for="selectRankingCategory">Categoria do ranking</label>
+          <select id="selectRankingCategory" class="form-control">
+            <option value="formula1">Fórmula 1</option>
+            <option value="magneto">Magneto</option>
+            <option value="brushless">Brushless</option>
+          </select>
+        </div>
+        <details class="ranking-help">
+          <summary>Como funciona?</summary>
+          <p>Seu ranking combina aproveitamento e dificuldade da subdivisão em cada corrida:
+            <strong>GT1 ×3, GT2 ×2 e GT3 ×1</strong>.</p>
+          <p><strong>Cálculo:</strong> 100 × soma dos pontos conquistados com o peso GT
+            ÷ soma dos pontos máximos nas corridas em que você participou.</p>
+          <p>Uma corrida comum permite até <strong>30 pontos</strong>. Quando a final vale o dobro,
+            seus pontos e o máximo possível dobram para <strong>60</strong>.</p>
+          <p><strong>Exemplo na GT2:</strong> 24 pontos numa corrida e 60 na final:
+            100 × [(24 × 2) + (60 × 2)] ÷ (30 + 60) = <strong>186,67 pontos de ranking</strong>.</p>
+          <p>Ausências não contam. Resultados descartados no campeonato entram normalmente aqui.
+            Quem disputou poucas corridas também participa, sem mínimo exigido. Uma participação
+            com zero pontos conta. Vale a subdivisão registrada no resultado, não a atual do cadastro.</p>
+          <p>Ganha quem tiver maior índice. Em empate, fica à frente quem disputou
+            <strong>menos corridas</strong>, pelo critério de eficiência. Se ambos forem iguais,
+            a posição é compartilhada (1º, 2º, 2º, 4º). O desempate usa o índice completo,
+            antes do arredondamento.</p>
+          <p>O máximo é <strong>300 pontos de ranking</strong>, não 300%.
+            Fórmula 1, Magneto e Brushless são rankings separados.</p>
+        </details>
+      </div>
+      <div id="rankingWarnings" role="status"></div>
+      <div id="rankingTableWrapper" class="table-container" aria-live="polite"></div>
+      <button id="btnRefreshRanking" class="btn btn-outline">Atualizar ranking</button>
+    </section>
+
     <!-- ABA 2: CAMPEONATOS -->
     <section id="tabChampionships" class="tab-panel">
       <div class="panel-header-simple">
@@ -175,13 +213,17 @@
 
   <!-- Menu Inferior Fixo (Mobile First) -->
   <nav class="bottom-nav">
-    <button class="nav-item active" data-tab="tabClassification">
+    <button class="nav-item active" data-tab="tabClassification" aria-label="Classificação">
       <span class="nav-icon">🏆</span>
-      <span class="nav-label">Classificação</span>
+      <span class="nav-label">Classif.</span>
     </button>
-    <button class="nav-item" data-tab="tabChampionships">
+    <button class="nav-item" data-tab="tabRanking">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Ranking</span>
+    </button>
+    <button class="nav-item" data-tab="tabChampionships" aria-label="Campeonatos">
       <span class="nav-icon">🏁</span>
-      <span class="nav-label">Campeonatos</span>
+      <span class="nav-label">Campeon.</span>
     </button>
     <button class="nav-item" data-tab="tabPilots">
       <span class="nav-icon">🏎️</span>
@@ -352,6 +394,16 @@
       </div>
       <form id="formChampionship" class="modal-body">
         <input type="hidden" id="editCampId">
+        <div class="form-group">
+          <label for="campRankingCategoria">Ranking de pilotos</label>
+          <select id="campRankingCategoria" class="form-control">
+            <option value="">Identificar pelo início: terça = Fórmula 1; quinta = Magneto; categoria Brushless = Brushless</option>
+            <option value="formula1">Fórmula 1</option>
+            <option value="magneto">Magneto</option>
+            <option value="brushless">Brushless</option>
+          </select>
+          <p class="text-muted">A escolha fica salva: mudar datas não muda o ranking.</p>
+        </div>
         <div class="form-row">
           <div class="form-group col-half">
             <label for="campNome">Nome do Campeonato</label>
@@ -466,7 +518,7 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=3"></script>
+  <script src="/static/app.js?v=4"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {

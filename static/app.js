@@ -32,7 +32,7 @@ function toggleTheme() {
   initTheme();
 }
 
-// Navegação pelas 5 Abas Inferiores
+// Navegação pelas Abas Inferiores
 function initNavigation() {
   const navButtons = document.querySelectorAll(".bottom-nav .nav-item");
   navButtons.forEach(btn => {
@@ -49,6 +49,7 @@ function initNavigation() {
       if (targetId === "tabPilots") renderPilotsList();
       if (targetId === "tabScoring") renderScoringTablesList();
       if (targetId === "tabCategories") renderCategoriesList();
+      if (targetId === "tabRanking") loadRanking();
     });
   });
 }
@@ -113,6 +114,58 @@ async function loadInitialData() {
     }
   } catch (e) {
     console.error("Erro ao carregar dados:", e);
+  }
+}
+
+let rankingRequest = 0;
+
+async function loadRanking() {
+  const request = ++rankingRequest;
+  const category = document.getElementById("selectRankingCategory").value;
+  const wrapper = document.getElementById("rankingTableWrapper");
+  const warnings = document.getElementById("rankingWarnings");
+  wrapper.textContent = "Carregando ranking...";
+  warnings.replaceChildren();
+  try {
+    const res = await fetch("/api/rankings", { cache: "no-store" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Não foi possível carregar o ranking.");
+    if (request !== rankingRequest) return;
+    data.avisos.forEach(message => {
+      const notice = document.createElement("p");
+      notice.className = "alert-error";
+      notice.textContent = message;
+      warnings.appendChild(notice);
+    });
+    const rows = data.rankings[category];
+    if (!rows.length) {
+      wrapper.textContent = "Nenhuma participação registrada nesta categoria desde 01/08/2026.";
+      return;
+    }
+    wrapper.innerHTML = `<table class="pilot-ranking-table">
+      <caption>Ranking de ${document.getElementById("selectRankingCategory").selectedOptions[0].textContent}</caption>
+      <thead><tr><th scope="col">Pos.</th><th scope="col">Piloto</th>
+      <th scope="col">Corridas</th><th scope="col">Pontos de ranking</th></tr></thead><tbody></tbody></table>`;
+    const body = wrapper.querySelector("tbody");
+    rows.forEach(row => {
+      const tr = document.createElement("tr");
+      if (row.pos <= 3) tr.className = ["", "row-first", "row-second", "row-third"][row.pos];
+      [row.pos + "º", row.piloto, row.participacoes,
+        row.indice.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      ].forEach(value => {
+        const td = document.createElement("td");
+        td.textContent = value;
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  } catch (error) {
+    if (request !== rankingRequest) return;
+    wrapper.replaceChildren();
+    const message = document.createElement("p");
+    message.className = "alert-error";
+    message.textContent = error.message;
+    wrapper.appendChild(message);
   }
 }
 
@@ -467,6 +520,8 @@ function renderCategoriesList() {
 
 // CONFIGURAÇÃO DE EVENT LISTENERS
 function setupEventListeners() {
+  document.getElementById("selectRankingCategory").addEventListener("change", loadRanking);
+  document.getElementById("btnRefreshRanking").addEventListener("click", loadRanking);
   // Alternar Tema
   document.getElementById("btnThemeToggle")?.addEventListener("click", toggleTheme);
 
@@ -942,6 +997,7 @@ function openEditChampionshipModal(campId) {
       document.getElementById("campPeriodicidade").value = c.periodicidade;
       tabSel.value = c.tabela_pontuacao;
       document.getElementById("campDobroUltima").checked = c.ultima_etapa_em_dobro;
+      document.getElementById("campRankingCategoria").value = c.ranking_categoria || "";
       renderSubdivInputs(c.subdivisoes);
     }
   } else {
@@ -952,6 +1008,7 @@ function openEditChampionshipModal(campId) {
     document.getElementById("campDescartes").value = 1;
     document.getElementById("campPeriodicidade").value = "semanal";
     document.getElementById("campDobroUltima").checked = true;
+    document.getElementById("campRankingCategoria").value = "";
     renderSubdivInputs([
       { subdivisao: "GT1", tempo_de_corte: "5.9s", sobem: 0, rebaixados: 3 },
       { subdivisao: "GT2", tempo_de_corte: "6.1s", sobem: 3, rebaixados: 3 },
@@ -1017,7 +1074,8 @@ async function handleChampionshipSubmit(e) {
 
   const payload = {
     nome, categoria, inicio, etapas, descartes, periodicidade,
-    tabela_pontuacao, ultima_etapa_em_dobro, subdivisoes
+    tabela_pontuacao, ultima_etapa_em_dobro, subdivisoes,
+    ranking_categoria: document.getElementById("campRankingCategoria").value || null
   };
 
   const url = campId ? `/api/championships/${campId}` : `/api/championships`;
@@ -1029,7 +1087,10 @@ async function handleChampionshipSubmit(e) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error("Erro ao salvar campeonato.");
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(typeof error.detail === "string" ? error.detail : "Confira os dados do campeonato.");
+    }
     closeModal("modalChampionshipEdit");
     alert("Campeonato salvo com sucesso!");
     await loadInitialData();

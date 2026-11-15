@@ -1,8 +1,8 @@
-const CACHE_NAME = "gtracing-pwa-v1";
+const CACHE_NAME = "gtracing-pwa-v2-ranking";
 const STATIC_ASSETS = [
   "/",
-  "/static/style.css?v=2",
-  "/static/app.js?v=3",
+  "/static/style.css?v=4",
+  "/static/app.js?v=4",
   "/static/manifest.json",
   "/static/icon-192.png",
   "/static/icon-512.png",
@@ -42,6 +42,11 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(
       fetch(e.request).catch(() => caches.match(e.request))
     );
+    return;
+  }
+
+  if (e.request.mode === "navigate") {
+    e.respondWith(fetch(e.request).catch(() => caches.match("/")));
     return;
   }
 

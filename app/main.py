@@ -7,6 +7,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Response, status, 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
+from app.ranking import RankingCategory, calculate_rankings, identify_ranking_category
 
 from app.db import (
     init_db, get_db, export_backup_json, restore_backup_json, generate_calendar
@@ -157,6 +158,7 @@ def get_all_data():
             "id": r["id"],
             "nome": r["nome"],
             "categoria": r["categoria"],
+            "ranking_categoria": r["ranking_categoria"],
             "inicio": r["inicio"],
             "etapas": r["etapas"],
             "descartes": r["descartes"],
@@ -177,6 +179,16 @@ def get_all_data():
         "pilots": pilots,
         "championships": championships
     }
+
+@app.get("/api/rankings")
+def get_rankings(response: Response):
+    response.headers["Cache-Control"] = "no-store"
+    data = get_all_data()
+    try:
+        return calculate_rankings(data["championships"], data["scoring_tables"])
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
 
 # Classificação por campeonato e subdivisão
 @app.get("/api/classification/{championship_id}/{subdivisao}")
@@ -492,10 +504,17 @@ class ChampionshipCreate(BaseModel):
     periodicidade: str
     tabela_pontuacao: str
     ultima_etapa_em_dobro: bool = True
+    ranking_categoria: Optional[RankingCategory] = None
     subdivisoes: List[Dict[str, Any]] # [{"subdivisao": "GT1", "tempo_de_corte": "5.9s", "sobem": 0, "rebaixados": 3}, ...]
 
 @app.post("/api/championships")
 def create_championship(req: ChampionshipCreate, admin: dict = Depends(require_admin)):
+    ranking_category = identify_ranking_category(req.model_dump())
+    if ranking_category is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Selecione o ranking: Fórmula 1, Magneto ou Brushless."
+        )
     conn = get_db()
     c = conn.cursor()
     
@@ -505,8 +524,8 @@ def create_championship(req: ChampionshipCreate, admin: dict = Depends(require_a
         INSERT INTO championships (
             nome, categoria, inicio, etapas, descartes, periodicidade,
             ultima_etapa_em_dobro, tabela_pontuacao, datas_das_etapas,
-            subdivisoes, resultados, fontes_blog, auditoria
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            subdivisoes, resultados, fontes_blog, auditoria, ranking_categoria
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         req.nome,
         req.categoria,
@@ -520,7 +539,8 @@ def create_championship(req: ChampionshipCreate, admin: dict = Depends(require_a
         json.dumps(req.subdivisoes, ensure_ascii=False),
         json.dumps({}, ensure_ascii=False),
         json.dumps({}, ensure_ascii=False),
-        json.dumps({}, ensure_ascii=False)
+        json.dumps({}, ensure_ascii=False),
+        ranking_category
     ))
     new_id = c.lastrowid
     conn.commit()
@@ -545,7 +565,7 @@ def update_championship(championship_id: int, req: ChampionshipCreate, admin: di
         UPDATE championships SET
             nome = ?, categoria = ?, inicio = ?, etapas = ?, descartes = ?,
             periodicidade = ?, ultima_etapa_em_dobro = ?, tabela_pontuacao = ?,
-            datas_das_etapas = ?, subdivisoes = ?
+            datas_das_etapas = ?, subdivisoes = ?, ranking_categoria = ?
         WHERE id = ?
     """, (
         req.nome,
@@ -558,6 +578,7 @@ def update_championship(championship_id: int, req: ChampionshipCreate, admin: di
         req.tabela_pontuacao,
         json.dumps(datas, ensure_ascii=False),
         json.dumps(req.subdivisoes, ensure_ascii=False),
+        req.ranking_categoria or camp["ranking_categoria"] or identify_ranking_category(req.model_dump()),
         championship_id
     ))
     conn.commit()
