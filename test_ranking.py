@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from app.db import export_backup_json, get_db, init_db, restore_backup_json
 from app.main import app, require_admin
 from app.ranking import calculate_rankings, identify_ranking_category
+from app.scoring import calculate_classification
 
 
 TABLES = [{"nome": "Padrão", "pontos_por_posicao": [30, 28, 24, 0]}]
@@ -159,6 +160,28 @@ class RankingCalculationTests(unittest.TestCase):
         self.assertIn("Copa", data["avisos"][0])
 
 
+class ChampionshipParticipationTests(unittest.TestCase):
+    def test_zero_points_and_absences_preserve_actual_participants(self):
+        camp = championship(
+            etapas=2, ultima_etapa_em_dobro=False,
+            resultados={"GT1": [stage(1, ["Ana", "Bia", "Caio", "Duda"]), stage(2, ["Ana"])]},
+        )
+        result = calculate_classification(camp, "GT1", TABLES[0])
+        pilots = {row["piloto"]: row for row in result["classificacao"]}
+        self.assertEqual(set(pilots), {"Ana", "Bia", "Caio", "Duda"})
+        self.assertEqual(pilots["Duda"]["total_sem_descarte"], 0)
+        self.assertTrue(pilots["Duda"]["etapas"][1]["presente"])
+        self.assertFalse(pilots["Duda"]["etapas"][2]["presente"])
+
+    def test_empty_championship_does_not_invent_simulated_participants(self):
+        for simulated in [False, True]:
+            with self.subTest(simulacao=simulated):
+                result = calculate_classification(
+                    championship(resultados={}), "GT1", TABLES[0], simulacao=simulated, seed=1
+                )
+                self.assertEqual(result["classificacao"], [])
+
+
 class RankingPersistenceTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
@@ -251,6 +274,58 @@ class RankingPersistenceTests(unittest.TestCase):
             restored_id = next(c["id"] for c in data["championships"] if c["nome"] == "Teste API")
             client.delete(f"/api/championships/{restored_id}").raise_for_status()
             self.assertEqual(pilot_rows(), [])
+
+    def test_historical_participation_does_not_enroll_pilots_in_current_championship(self):
+        with TestClient(app) as client:
+            data = client.get("/api/data").json()
+            current = next(c for c in data["championships"] if c["nome"] == "V Fórmula Magneto 2026")
+            official_names = current["resultados"]["GT1"][0]["ordem_de_chegada"]
+            payload = championship(
+                nome="Histórico da mesma categoria", categoria=current["categoria"],
+                tabela_pontuacao="Padrão GT Racing", regras_confirmadas=False,
+            )
+            response = client.post("/api/championships", json=payload)
+            response.raise_for_status()
+            history_id = response.json()["id"]
+            client.post("/api/stages/save-results", json={
+                "championship_id": history_id, "etapa": 1, "data": "2026-08-18",
+                "resultados_por_subdivisao": {"GT1": ["Visitante Histórico", "Outro Histórico"]},
+            }).raise_for_status()
+
+            for suffix in ["", "?simulacao=true"]:
+                response = client.get(f"/api/classification/{current['id']}/GT1{suffix}")
+                response.raise_for_status()
+                self.assertEqual({row["piloto"] for row in response.json()["classificacao"]}, set(official_names))
+            history = client.get(f"/api/classification/{history_id}/GT1").json()
+            self.assertEqual(
+                {row["piloto"] for row in history["classificacao"]},
+                {"Visitante Histórico", "Outro Histórico"},
+            )
+
+            preview = {
+                "championship_id": current["id"],
+                "raw_text": """<title>V Fórmula Magneto 2026</title>
+                <table><tr><td>10/11/2026 GT2 Resultados Piloto</td></tr>
+                <tr><td>1</td><td>Visitante Histórico</td><td>150</td></tr></table>""",
+            }
+            response = client.post("/api/blog/fetch-and-parse", json=preview)
+            response.raise_for_status()
+            self.assertIsNone(response.json()["subdivisoes"]["GT2"][0]["aviso"])
+
+            client.post("/api/stages/save-results", json={
+                "championship_id": current["id"], "etapa": 2, "data": "2026-11-17",
+                "resultados_por_subdivisao": {"GT1": ["Moch", "Visitante Histórico"]},
+            }).raise_for_status()
+            classification = client.get(f"/api/classification/{current['id']}/GT1").json()
+            visitor = next(row for row in classification["classificacao"] if row["piloto"] == "Visitante Histórico")
+            self.assertEqual(visitor["total_sem_descarte"], 28)
+            self.assertFalse(visitor["etapas"]["1"]["presente"])
+            earlier = client.get(f"/api/classification/{current['id']}/GT1?max_etapa=1").json()
+            self.assertNotIn("Visitante Histórico", [row["piloto"] for row in earlier["classificacao"]])
+            self.assertNotIn("Outro Histórico", [row["piloto"] for row in classification["classificacao"]])
+            response = client.post("/api/blog/fetch-and-parse", json=preview)
+            response.raise_for_status()
+            self.assertIn("GT1", response.json()["subdivisoes"]["GT2"][0]["aviso"])
 
     def test_pending_rules_survive_edits_restore_and_restart(self):
         with TestClient(app) as client:

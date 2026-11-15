@@ -228,17 +228,6 @@ def get_classification(
         "resultados": json.loads(row["resultados"]),
     }
     
-    c.execute("SELECT * FROM pilots")
-    pilots = [
-        {
-            "id": r["id"],
-            "nome": r["nome"],
-            "apelidos_no_blog": json.loads(r["apelidos"]),
-            "provas": json.loads(r["provas"])
-        }
-        for r in c.fetchall()
-    ]
-    
     c.execute("SELECT * FROM scoring_tables WHERE nome = ?", (camp["tabela_pontuacao"],))
     stab = c.fetchone()
     if stab:
@@ -254,7 +243,6 @@ def get_classification(
     result = calculate_classification(
         camp,
         subdivisao,
-        pilots,
         tabela,
         max_etapa=max_etapa,
         simulacao=simulacao
@@ -293,14 +281,19 @@ async def blog_fetch_and_parse(req: BlogFetchRequest, admin: dict = Depends(requ
         for r in c.fetchall()
     ]
     
-    # Mapear pilotos já em outras subdivisões deste campeonato
-    c.execute("SELECT * FROM pilots")
     pilotos_por_sub = {}
-    for r in c.fetchall():
-        provas = json.loads(r["provas"])
-        for pr in provas:
-            if pr.get("categoria") == cat_nome:
-                pilotos_por_sub[r["nome"]] = pr.get("subdivisao")
+    resultados = json.loads(camp_row["resultados"])
+    etapas = sorted(
+        (
+            (resultado["etapa"], sub, resultado)
+            for sub, resultados_sub in resultados.items()
+            for resultado in resultados_sub
+        ),
+        key=lambda item: item[0],
+    )
+    for _, sub, resultado in etapas:
+        for piloto in resultado.get("ordem_de_chegada", []):
+            pilotos_por_sub[piloto] = sub
                 
     conn.close()
     

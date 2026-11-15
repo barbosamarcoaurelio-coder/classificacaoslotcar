@@ -108,7 +108,6 @@ def calculate_projection_probabilities(
 def calculate_classification(
     camp: Dict[str, Any],
     subdivisao_nome: str,
-    pilotos_cadastrados: List[Dict[str, Any]],
     pontuacao_tabela: Dict[str, Any],
     max_etapa: Optional[int] = None,
     simulacao: bool = False,
@@ -120,6 +119,7 @@ def calculate_classification(
     - N = mínimo(descartes do campeonato, etapas disputadas - 1). Ausência conta 0.
     - Na última etapa os pontos valem em dobro (se ultima_etapa_em_dobro == True).
     - Ordenação: maior total com descarte. Desempate: maior total sem descarte, depois nome.
+    - Participam somente pilotos com resultado neste campeonato e subdivisão.
     """
     descartes_config = camp.get("descartes", 0)
     total_etapas_campeonato = camp.get("etapas", 1)
@@ -131,24 +131,18 @@ def calculate_classification(
         
     # Ordenar por número da etapa
     resultados_sub.sort(key=lambda r: r["etapa"])
+    pilotos_na_sub = {
+        piloto
+        for resultado in resultados_sub
+        for piloto in resultado.get("ordem_de_chegada", [])
+    }
     
     # Se for simulação, preencher as etapas restantes até total_etapas_campeonato
     etapas_existentes = set(r["etapa"] for r in resultados_sub)
     if simulacao and len(resultados_sub) < total_etapas_campeonato:
         if seed is not None:
             random.seed(seed)
-        # Pilotos ativos nesta categoria/subdivisão
-        categoria_nome = camp.get("categoria")
-        pilotos_ativos = set()
-        for p in pilotos_cadastrados:
-            for pr in p.get("provas", []):
-                if pr.get("categoria") == categoria_nome and pr.get("subdivisao") == subdivisao_nome:
-                    pilotos_ativos.add(p["nome"])
-        for r in resultados_sub:
-            for p in r.get("ordem_de_chegada", []):
-                pilotos_ativos.add(p)
-                
-        lista_pilotos_sim = list(pilotos_ativos)
+        lista_pilotos_sim = sorted(pilotos_na_sub)
         datas = camp.get("datas_das_etapas", [])
         
         for e in range(1, total_etapas_campeonato + 1):
@@ -167,18 +161,6 @@ def calculate_classification(
     num_etapas_disputadas = len(resultados_sub)
     num_descartes = min(descartes_config, max(0, num_etapas_disputadas - 1))
     
-    # Identificar pilotos da subdivisão
-    categoria_nome = camp.get("categoria")
-    pilotos_na_sub = set()
-    for p in pilotos_cadastrados:
-        for pr in p.get("provas", []):
-            if pr.get("categoria") == categoria_nome and pr.get("subdivisao") == subdivisao_nome:
-                pilotos_na_sub.add(p["nome"])
-                
-    for r in resultados_sub:
-        for piloto in r.get("ordem_de_chegada", []):
-            pilotos_na_sub.add(piloto)
-            
     pontos_por_pos = pontuacao_tabela.get("pontos_por_posicao", [30, 28, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9])
     
     # Configuração de sobem/rebaixados da subdivisão

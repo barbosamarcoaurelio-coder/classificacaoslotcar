@@ -34,9 +34,13 @@ def run_acceptance_tests():
     camp_formula = next(c for c in seed["campeonatos"] if "Fórmula" in c["nome"])
     print(f"\n--- TESTE 2: {camp_formula['nome']} (1 Etapa) ---")
     for sub in ["GT1", "GT2"]:
-        res = calculate_classification(camp_formula, sub, pilotos, tabela, max_etapa=1)
+        res = calculate_classification(camp_formula, sub, tabela, max_etapa=1)
         calc_rows = res["classificacao"]
-        esperado = camp_formula["classificacao_esperada"][sub]
+        participantes = {
+            nome for etapa in camp_formula["resultados"].get(sub, []) if etapa["etapa"] <= 1
+            for nome in etapa["ordem_de_chegada"]
+        }
+        esperado = [linha for linha in camp_formula["classificacao_esperada"][sub] if linha["piloto"] in participantes]
         
         assert len(calc_rows) == len(esperado), f"{sub}: Esperados {len(esperado)} pilotos, obtidos {len(calc_rows)}"
         for i, exp in enumerate(esperado):
@@ -51,9 +55,13 @@ def run_acceptance_tests():
     camp_gt = next(c for c in seed["campeonatos"] if "Gran Turismo" in c["nome"])
     print(f"\n--- TESTE 3: {camp_gt['nome']} (4 Etapas - Oficial Alê GT) ---")
     for sub in ["GT1", "GT2", "GT3"]:
-        res = calculate_classification(camp_gt, sub, pilotos, tabela, max_etapa=4)
+        res = calculate_classification(camp_gt, sub, tabela, max_etapa=4)
         calc_rows = res["classificacao"]
-        esperado = camp_gt["classificacao_esperada"][sub]
+        participantes = {
+            nome for etapa in camp_gt["resultados"].get(sub, []) if etapa["etapa"] <= 4
+            for nome in etapa["ordem_de_chegada"]
+        }
+        esperado = [linha for linha in camp_gt["classificacao_esperada"][sub] if linha["piloto"] in participantes]
         
         assert len(calc_rows) == len(esperado), f"{sub}: Esperados {len(esperado)} pilotos, obtidos {len(calc_rows)}"
         for i, exp in enumerate(esperado):
@@ -67,9 +75,13 @@ def run_acceptance_tests():
     # Teste Gran Turismo Magneto 2026 (5 Etapas - classificacao_atual_a_conferir)
     print(f"\n--- TESTE 4: {camp_gt['nome']} (5 Etapas - Com 5ª Etapa do Blog) ---")
     for sub in ["GT1", "GT2", "GT3"]:
-        res = calculate_classification(camp_gt, sub, pilotos, tabela, max_etapa=5)
+        res = calculate_classification(camp_gt, sub, tabela, max_etapa=5)
         calc_rows = res["classificacao"]
-        esperado = camp_gt["classificacao_atual_a_conferir"][sub]
+        participantes = {
+            nome for etapa in camp_gt["resultados"].get(sub, []) if etapa["etapa"] <= 5
+            for nome in etapa["ordem_de_chegada"]
+        }
+        esperado = [linha for linha in camp_gt["classificacao_atual_a_conferir"][sub] if linha["piloto"] in participantes]
         
         assert len(calc_rows) == len(esperado), f"{sub}: Esperados {len(esperado)} pilotos, obtidos {len(calc_rows)}"
         for i, exp in enumerate(esperado):
