@@ -56,6 +56,11 @@ Os dois filtros da aba combinam situação e categoria do ranking
 (Fórmula 1, Magneto ou Brushless). Encerrar não apaga resultados nem retira
 pontos do ranking.
 
+Na **Classificação**, o seletor mostra somente campeonatos **Em andamento**.
+Se o campeonato selecionado for encerrado, outro em andamento é selecionado.
+Sem campeonatos em andamento, a tela informa isso e desativa o lançamento de etapas.
+Os encerrados continuam listados na aba **Campeonatos**.
+
 A opção **Incluir na pontuação do ranking de pilotos** controla a participação
 do campeonato no ranking, independentemente da situação. As regras também
 precisam estar conferidas. Desmarcar não altera a classificação do campeonato.

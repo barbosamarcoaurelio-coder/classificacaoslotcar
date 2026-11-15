@@ -90,17 +90,18 @@ async function loadInitialData() {
     const res = await fetch("/api/data");
     if (res.ok) {
       state.data = await res.json();
-      populateChampionshipSelect();
-      if (state.data.championships.length > 0) {
+      const activeChampionships = state.data.championships.filter(c => c.situacao === "em_andamento");
+      populateChampionshipSelect(activeChampionships);
+      if (activeChampionships.length > 0) {
         const stored = localStorage.getItem("gt_selected_camp");
-        const found = state.data.championships.find(c => c.id == stored);
+        const found = activeChampionships.find(c => c.id == stored);
         if (found) {
           state.selectedCampId = found.id;
         } else {
           // Selecionar por padrão o campeonato com mais etapas carregadas
           let maxEtapas = -1;
-          let best = state.data.championships[0];
-          state.data.championships.forEach(c => {
+          let best = activeChampionships[0];
+          activeChampionships.forEach(c => {
             let total = 0;
             Object.values(c.resultados).forEach(arr => total += arr.length);
             if (total > maxEtapas) {
@@ -110,10 +111,22 @@ async function loadInitialData() {
           });
           state.selectedCampId = best.id;
         }
+        localStorage.setItem("gt_selected_camp", state.selectedCampId);
         const sel = document.getElementById("selectChampionship");
         if (sel) sel.value = state.selectedCampId;
         updateSubdivPills();
         await loadClassification();
+      } else {
+        state.selectedCampId = null;
+        state.selectedSubdiv = null;
+        localStorage.removeItem("gt_selected_camp");
+        document.getElementById("subdivPills").replaceChildren();
+        document.getElementById("classificationPending").classList.add("hidden");
+        document.getElementById("classificationTableWrapper").textContent = "Nenhum campeonato em andamento.";
+        document.getElementById("infoCategory").textContent = "-";
+        document.getElementById("infoCorte").textContent = "-";
+        document.getElementById("infoEtapas").textContent = "0/0";
+        document.getElementById("infoDescartes").textContent = "0";
       }
     }
   } catch (e) {
@@ -174,11 +187,20 @@ async function loadRanking() {
 }
 
 // Popula Seletor de Campeonatos
-function populateChampionshipSelect() {
+function populateChampionshipSelect(championships) {
   const sel = document.getElementById("selectChampionship");
   if (!sel) return;
   sel.innerHTML = "";
-  state.data.championships.forEach(c => {
+  sel.disabled = championships.length === 0;
+  document.getElementById("btnSearchBlog").disabled = sel.disabled;
+  document.getElementById("btnNewStageWizard").disabled = sel.disabled;
+  if (!championships.length) {
+    const opt = document.createElement("option");
+    opt.textContent = "Nenhum campeonato em andamento";
+    opt.value = "";
+    sel.appendChild(opt);
+  }
+  championships.forEach(c => {
     const opt = document.createElement("option");
     opt.value = c.id;
     opt.textContent = `${c.nome} (${c.categoria})`;
@@ -215,6 +237,8 @@ function updateSubdivPills() {
 // Carregar e Renderizar Classificação Oficial
 async function loadClassification() {
   if (!state.selectedCampId || !state.selectedSubdiv) return;
+  const campId = state.selectedCampId;
+  const subdiv = state.selectedSubdiv;
   
   const wrapper = document.getElementById("classificationTableWrapper");
   if (wrapper) wrapper.innerHTML = '<div class="loading-spinner">Calculando classificação oficial...</div>';
@@ -224,8 +248,10 @@ async function loadClassification() {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Erro ao buscar classificação.");
     const data = await res.json();
+    if (state.selectedCampId !== campId || state.selectedSubdiv !== subdiv) return;
     renderClassificationTable(data);
   } catch (e) {
+    if (state.selectedCampId !== campId || state.selectedSubdiv !== subdiv) return;
     if (wrapper) wrapper.innerHTML = `<div class="alert-error">Erro ao carregar classificação: ${e.message}</div>`;
   }
 }
