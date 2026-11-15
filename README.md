@@ -62,6 +62,15 @@ Backups passam a incluir `ranking_categoria`; backups antigos continuam aceitos,
 com identificação pelas mesmas regras. A migração adiciona essa coluna sem apagar
 dados, em SQLite ou PostgreSQL, na inicialização.
 
+### Histórico com regras pendentes
+
+Ao cadastrar resultados antigos sem regulamento confirmado, desmarque **Regras
+conferidas: incluir no ranking**. Os resultados ficam salvos e identificados como
+provisórios, fora do ranking. Confira tabela de pontos, total de etapas, descartes,
+dobra da final e subdivisões antes de marcar. A última etapa encontrada no blog
+não é necessariamente a final do campeonato. `regras_confirmadas` é preservado em
+backups; campeonatos existentes e backups antigos continuam confirmados por padrão.
+
 Testes específicos, em banco temporário:
 ```bash
 python3 -m unittest test_ranking.py

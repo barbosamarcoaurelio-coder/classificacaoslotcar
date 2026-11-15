@@ -230,6 +230,7 @@ async function loadClassification() {
 
 // Renderização da Tabela de Classificação
 function renderClassificationTable(info) {
+  document.getElementById("classificationPending").classList.toggle("hidden", info.regras_confirmadas !== false);
   // Atualizar info cards
   document.getElementById("infoCategory").textContent = info.categoria || "-";
   document.getElementById("infoCorte").textContent = info.tempo_de_corte || "Sem corte";
@@ -383,6 +384,7 @@ function renderChampionshipsList() {
       <div class="card-header-row">
         <div>
           <div class="card-title">${c.nome}</div>
+          ${c.regras_confirmadas === false ? '<p class="alert-error">Regras pendentes · fora do ranking</p>' : ''}
           <div class="card-subtitle">Categoria: ${c.categoria} | Tabela: ${c.tabela_pontuacao}</div>
         </div>
         ${state.user.is_admin ? `
@@ -998,6 +1000,7 @@ function openEditChampionshipModal(campId) {
       tabSel.value = c.tabela_pontuacao;
       document.getElementById("campDobroUltima").checked = c.ultima_etapa_em_dobro;
       document.getElementById("campRankingCategoria").value = c.ranking_categoria || "";
+      document.getElementById("campRegrasConfirmadas").checked = c.regras_confirmadas !== false;
       renderSubdivInputs(c.subdivisoes);
     }
   } else {
@@ -1009,6 +1012,7 @@ function openEditChampionshipModal(campId) {
     document.getElementById("campPeriodicidade").value = "semanal";
     document.getElementById("campDobroUltima").checked = true;
     document.getElementById("campRankingCategoria").value = "";
+    document.getElementById("campRegrasConfirmadas").checked = true;
     renderSubdivInputs([
       { subdivisao: "GT1", tempo_de_corte: "5.9s", sobem: 0, rebaixados: 3 },
       { subdivisao: "GT2", tempo_de_corte: "6.1s", sobem: 3, rebaixados: 3 },
@@ -1075,7 +1079,8 @@ async function handleChampionshipSubmit(e) {
   const payload = {
     nome, categoria, inicio, etapas, descartes, periodicidade,
     tabela_pontuacao, ultima_etapa_em_dobro, subdivisoes,
-    ranking_categoria: document.getElementById("campRankingCategoria").value || null
+    ranking_categoria: document.getElementById("campRankingCategoria").value || null,
+    regras_confirmadas: document.getElementById("campRegrasConfirmadas").checked
   };
 
   const url = campId ? `/api/championships/${campId}` : `/api/championships`;

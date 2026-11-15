@@ -173,10 +173,17 @@ def init_db(admin_email: str = "alegt@gtracing.com.br", admin_password: str = "g
     
     if is_postgres():
         c.execute("ALTER TABLE championships ADD COLUMN IF NOT EXISTS ranking_categoria TEXT")
+        c.execute(
+            "ALTER TABLE championships ADD COLUMN IF NOT EXISTS regras_confirmadas "
+            "INTEGER NOT NULL DEFAULT 1"
+        )
     else:
         c.execute("PRAGMA table_info(championships)")
-        if "ranking_categoria" not in {row["name"] for row in c.fetchall()}:
+        columns = {row["name"] for row in c.fetchall()}
+        if "ranking_categoria" not in columns:
             c.execute("ALTER TABLE championships ADD COLUMN ranking_categoria TEXT")
+        if "regras_confirmadas" not in columns:
+            c.execute("ALTER TABLE championships ADD COLUMN regras_confirmadas INTEGER NOT NULL DEFAULT 1")
 
     c.execute("SELECT id, categoria, inicio FROM championships WHERE ranking_categoria IS NULL")
     for row in c.fetchall():
@@ -242,8 +249,8 @@ def seed_data(filepath: str, conn: Optional[Any] = None):
             INSERT OR REPLACE INTO championships (
                 nome, categoria, inicio, etapas, descartes, periodicidade,
                 ultima_etapa_em_dobro, tabela_pontuacao, datas_das_etapas,
-                subdivisoes, resultados, fontes_blog, auditoria, ranking_categoria
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                subdivisoes, resultados, fontes_blog, auditoria, ranking_categoria, regras_confirmadas
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             camp["nome"],
             camp["categoria"],
@@ -259,6 +266,7 @@ def seed_data(filepath: str, conn: Optional[Any] = None):
             json.dumps(camp.get("fontes_blog", {}), ensure_ascii=False),
             json.dumps(camp.get("auditoria", {}), ensure_ascii=False),
             identify_ranking_category(camp),
+            1 if camp.get("regras_confirmadas", True) else 0,
         ))
         
     conn.commit()
@@ -323,6 +331,7 @@ def export_backup_json() -> Dict[str, Any]:
             "nome": r["nome"],
             "categoria": r["categoria"],
             "ranking_categoria": r["ranking_categoria"],
+            "regras_confirmadas": bool(r["regras_confirmadas"]),
             "inicio": r["inicio"],
             "etapas": r["etapas"],
             "descartes": r["descartes"],
@@ -393,8 +402,8 @@ def restore_backup_json(data: Dict[str, Any]):
             INSERT INTO championships (
                 nome, categoria, inicio, etapas, descartes, periodicidade,
                 ultima_etapa_em_dobro, tabela_pontuacao, datas_das_etapas,
-                subdivisoes, resultados, fontes_blog, auditoria, ranking_categoria
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                subdivisoes, resultados, fontes_blog, auditoria, ranking_categoria, regras_confirmadas
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             camp["nome"],
             camp["categoria"],
@@ -410,6 +419,7 @@ def restore_backup_json(data: Dict[str, Any]):
             json.dumps(camp.get("fontes_blog", {}), ensure_ascii=False),
             json.dumps(camp.get("auditoria", {}), ensure_ascii=False),
             identify_ranking_category(camp),
+            1 if camp.get("regras_confirmadas", True) else 0,
         ))
         
     conn.commit()

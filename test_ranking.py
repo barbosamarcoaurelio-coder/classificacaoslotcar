@@ -45,6 +45,15 @@ def rows(championships, category="formula1", tables=None):
 
 
 class RankingCalculationTests(unittest.TestCase):
+    def test_unconfirmed_rules_do_not_influence_performance(self):
+        data = calculate_rankings([
+            championship(regras_confirmadas=False, resultados={"Geral": [stage(1, ["Ana"])]}),
+            championship(nome="Conferido"),
+        ], TABLES)
+        self.assertEqual(data["rankings"]["formula1"][0]["participacoes"], 1)
+        self.assertEqual(data["rankings"]["formula1"][0]["indice"], 300)
+        self.assertIn("fora do ranking", data["avisos"][0])
+
     def test_double_final_and_discarded_results_still_count(self):
         camp = championship(etapas=2, resultados={"GT2": [
             stage(1, ["Bia", "Caio", "Ana"]),
@@ -235,6 +244,43 @@ class RankingPersistenceTests(unittest.TestCase):
             restored_id = next(c["id"] for c in data["championships"] if c["nome"] == "Teste API")
             client.delete(f"/api/championships/{restored_id}").raise_for_status()
             self.assertEqual(pilot_rows(), [])
+
+    def test_pending_rules_survive_edits_restore_and_restart(self):
+        with TestClient(app) as client:
+            payload = championship(
+                nome="Histórico pendente", regras_confirmadas=False,
+                tabela_pontuacao="Padrão GT Racing",
+            )
+            response = client.post("/api/championships", json=payload)
+            response.raise_for_status()
+            camp_id = response.json()["id"]
+            client.post("/api/stages/save-results", json={
+                "championship_id": camp_id, "etapa": 1, "data": "2026-08-04",
+                "resultados_por_subdivisao": {"GT1": ["Piloto Histórico"]},
+            }).raise_for_status()
+            classification = client.get(f"/api/classification/{camp_id}/GT1").json()
+            self.assertFalse(classification["regras_confirmadas"])
+            payload.pop("regras_confirmadas")
+            client.put(f"/api/championships/{camp_id}", json=payload).raise_for_status()
+            backup = export_backup_json()
+            self.assertFalse(next(
+                c for c in backup["campeonatos"] if c["nome"] == payload["nome"]
+            )["regras_confirmadas"])
+            restore_backup_json(backup)
+            init_db()
+            ranking = client.get("/api/rankings").json()
+            self.assertNotIn("Piloto Histórico", [
+                row["piloto"] for row in ranking["rankings"]["formula1"]
+            ])
+            self.assertTrue(any("Histórico pendente" in warning for warning in ranking["avisos"]))
+            data = client.get("/api/data").json()
+            restored_id = next(c["id"] for c in data["championships"] if c["nome"] == payload["nome"])
+            payload["regras_confirmadas"] = True
+            client.put(f"/api/championships/{restored_id}", json=payload).raise_for_status()
+            ranking = client.get("/api/rankings").json()
+            self.assertIn("Piloto Histórico", [
+                row["piloto"] for row in ranking["rankings"]["formula1"]
+            ])
 
     def test_legacy_backup_infers_category_and_explicit_choice_survives(self):
         with TestClient(app):

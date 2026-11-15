@@ -159,6 +159,7 @@ def get_all_data():
             "nome": r["nome"],
             "categoria": r["categoria"],
             "ranking_categoria": r["ranking_categoria"],
+            "regras_confirmadas": bool(r["regras_confirmadas"]),
             "inicio": r["inicio"],
             "etapas": r["etapas"],
             "descartes": r["descartes"],
@@ -247,7 +248,7 @@ def get_classification(
         
     conn.close()
     
-    return calculate_classification(
+    result = calculate_classification(
         camp,
         subdivisao,
         pilots,
@@ -255,6 +256,8 @@ def get_classification(
         max_etapa=max_etapa,
         simulacao=simulacao
     )
+    result["regras_confirmadas"] = bool(row["regras_confirmadas"])
+    return result
 
 @app.get("/api/classification/{championship_id}/{subdivisao}/export-html", response_class=HTMLResponse)
 def export_html_endpoint(championship_id: int, subdivisao: str):
@@ -505,6 +508,7 @@ class ChampionshipCreate(BaseModel):
     tabela_pontuacao: str
     ultima_etapa_em_dobro: bool = True
     ranking_categoria: Optional[RankingCategory] = None
+    regras_confirmadas: Optional[bool] = None
     subdivisoes: List[Dict[str, Any]] # [{"subdivisao": "GT1", "tempo_de_corte": "5.9s", "sobem": 0, "rebaixados": 3}, ...]
 
 @app.post("/api/championships")
@@ -524,8 +528,8 @@ def create_championship(req: ChampionshipCreate, admin: dict = Depends(require_a
         INSERT INTO championships (
             nome, categoria, inicio, etapas, descartes, periodicidade,
             ultima_etapa_em_dobro, tabela_pontuacao, datas_das_etapas,
-            subdivisoes, resultados, fontes_blog, auditoria, ranking_categoria
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            subdivisoes, resultados, fontes_blog, auditoria, ranking_categoria, regras_confirmadas
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         req.nome,
         req.categoria,
@@ -540,7 +544,8 @@ def create_championship(req: ChampionshipCreate, admin: dict = Depends(require_a
         json.dumps({}, ensure_ascii=False),
         json.dumps({}, ensure_ascii=False),
         json.dumps({}, ensure_ascii=False),
-        ranking_category
+        ranking_category,
+        0 if req.regras_confirmadas is False else 1
     ))
     new_id = c.lastrowid
     conn.commit()
@@ -565,7 +570,7 @@ def update_championship(championship_id: int, req: ChampionshipCreate, admin: di
         UPDATE championships SET
             nome = ?, categoria = ?, inicio = ?, etapas = ?, descartes = ?,
             periodicidade = ?, ultima_etapa_em_dobro = ?, tabela_pontuacao = ?,
-            datas_das_etapas = ?, subdivisoes = ?, ranking_categoria = ?
+            datas_das_etapas = ?, subdivisoes = ?, ranking_categoria = ?, regras_confirmadas = ?
         WHERE id = ?
     """, (
         req.nome,
@@ -579,6 +584,7 @@ def update_championship(championship_id: int, req: ChampionshipCreate, admin: di
         json.dumps(datas, ensure_ascii=False),
         json.dumps(req.subdivisoes, ensure_ascii=False),
         req.ranking_categoria or camp["ranking_categoria"] or identify_ranking_category(req.model_dump()),
+        camp["regras_confirmadas"] if req.regras_confirmadas is None else int(req.regras_confirmadas),
         championship_id
     ))
     conn.commit()

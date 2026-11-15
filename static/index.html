@@ -94,6 +94,10 @@
             ⚡ Lançar / Importar Etapa
           </button>
         </div>
+        <p id="classificationPending" class="alert-error hidden">
+          Histórico com regras pendentes. A pontuação é provisória e não entra no ranking
+          até conferir o total de etapas, os descartes e a pontuação da final.
+        </p>
       </div>
 
       <!-- Tabela de Classificação -->
@@ -152,6 +156,8 @@
             antes do arredondamento.</p>
           <p>O máximo é <strong>300 pontos de ranking</strong>, não 300%.
             Fórmula 1, Magneto e Brushless são rankings separados.</p>
+          <p>Campeonatos históricos com regras pendentes ficam fora do ranking até a conferência.
+            Isso evita presumir a pontuação da final ou transformar a última corrida encontrada em final.</p>
         </details>
       </div>
       <div id="rankingWarnings" role="status"></div>
@@ -395,6 +401,15 @@
       <form id="formChampionship" class="modal-body">
         <input type="hidden" id="editCampId">
         <div class="form-group">
+          <label>
+            <input type="checkbox" id="campRegrasConfirmadas" checked>
+            Regras conferidas: incluir no ranking
+          </label>
+          <p class="text-muted">Marque apenas após conferir a tabela de pontos, o total de etapas,
+            os descartes, a pontuação da final e as subdivisões dos resultados.
+            Desmarcado, o histórico fica salvo com pontuação provisória e fora do ranking.</p>
+        </div>
+        <div class="form-group">
           <label for="campRankingCategoria">Ranking de pilotos</label>
           <select id="campRankingCategoria" class="form-control">
             <option value="">Identificar pelo início: terça = Fórmula 1; quinta = Magneto; categoria Brushless = Brushless</option>
@@ -518,7 +533,7 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=5"></script>
+  <script src="/static/app.js?v=6"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
