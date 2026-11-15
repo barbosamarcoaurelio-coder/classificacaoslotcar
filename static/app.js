@@ -34,6 +34,8 @@ function toggleTheme() {
 
 // Navegação pelas Abas Inferiores
 function initNavigation() {
+  document.getElementById("selectRankingCategory").addEventListener("change", loadRanking);
+  document.getElementById("btnRefreshRanking").addEventListener("click", loadRanking);
   const navButtons = document.querySelectorAll(".bottom-nav .nav-item");
   navButtons.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -520,8 +522,6 @@ function renderCategoriesList() {
 
 // CONFIGURAÇÃO DE EVENT LISTENERS
 function setupEventListeners() {
-  document.getElementById("selectRankingCategory").addEventListener("change", loadRanking);
-  document.getElementById("btnRefreshRanking").addEventListener("click", loadRanking);
   // Alternar Tema
   document.getElementById("btnThemeToggle")?.addEventListener("click", toggleTheme);
 
