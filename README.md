@@ -15,6 +15,15 @@ O repositório já inclui o arquivo `render.yaml` (Blueprint) e `Procfile`:
 3. Selecione o repositório `barbosamarcoaurelio-coder/classificacaoslotcar`.
 4. O Render detectará automaticamente o `render.yaml` e publicará o site com HTTPS gratuito e URL pública (ex.: `https://classificacaoslotcar.onrender.com`).
 
+### 🐘 Persistência com PostgreSQL (Recomendado)
+Para persistir os dados permanentemente em produção (sem depender do ciclo de vida efêmero do container):
+1. Crie um banco PostgreSQL gratuito (ex.: [Supabase](https://supabase.com/), [Neon.tech](https://neon.tech/) ou o PostgreSQL do Render).
+2. No painel do seu Web Service no Render, vá em **Environment** e adicione a variável:
+   - **Key:** `DATABASE_URL`
+   - **Value:** `postgresql://usuario:senha@host:5432/banco`
+3. O sistema detectará o PostgreSQL automaticamente na inicialização, criará as tabelas e fará a carga inicial de `dados-iniciais-slot-car.json`.
+4. *Em ambiente local (sem `DATABASE_URL`), o sistema continuará usando SQLite (`slotcar.db`) normalmente.*
+
 ## 🔑 Acesso de Administrador
 - **E-mail:** `alegt@gtracing.com.br`
 - **Senha:** `gtracing2026`

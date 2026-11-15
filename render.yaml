@@ -9,3 +9,5 @@ services:
         value: 3.9.5
       - key: APP_SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        sync: false

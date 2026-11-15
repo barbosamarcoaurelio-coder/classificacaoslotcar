@@ -83,11 +83,17 @@
   },
   {
    "nome": "Adilson Miranda",
-   "apelidos_no_blog": [],
+   "apelidos_no_blog": [
+    "Adilson"
+   ],
    "provas": [
     {
      "categoria": "Gran Turismo",
      "subdivisao": "GT3"
+    },
+    {
+     "categoria": "Brushless",
+     "subdivisao": "GT1"
     }
    ]
   },
@@ -101,6 +107,16 @@
     },
     {
      "categoria": "Gran Turismo",
+     "subdivisao": "GT1"
+    }
+   ]
+  },
+  {
+   "nome": "Ari",
+   "apelidos_no_blog": [],
+   "provas": [
+    {
+     "categoria": "Brushless",
      "subdivisao": "GT1"
     }
    ]
@@ -192,20 +208,6 @@
    ]
   },
   {
-   "nome": "Dé",
-   "apelidos_no_blog": [],
-   "provas": [
-    {
-     "categoria": "Fórmula Magneto",
-     "subdivisao": "GT1"
-    },
-    {
-     "categoria": "Gran Turismo",
-     "subdivisao": "GT3"
-    }
-   ]
-  },
-  {
    "nome": "Dener",
    "apelidos_no_blog": [],
    "provas": [
@@ -232,6 +234,24 @@
     {
      "categoria": "Gran Turismo",
      "subdivisao": "GT2"
+    },
+    {
+     "categoria": "Brushless",
+     "subdivisao": "GT1"
+    }
+   ]
+  },
+  {
+   "nome": "Dé",
+   "apelidos_no_blog": [],
+   "provas": [
+    {
+     "categoria": "Fórmula Magneto",
+     "subdivisao": "GT1"
+    },
+    {
+     "categoria": "Gran Turismo",
+     "subdivisao": "GT3"
     }
    ]
   },
@@ -287,11 +307,17 @@
   },
   {
    "nome": "Felipe Dutra",
-   "apelidos_no_blog": [],
+   "apelidos_no_blog": [
+    "Felipe"
+   ],
    "provas": [
     {
      "categoria": "Gran Turismo",
      "subdivisao": "GT3"
+    },
+    {
+     "categoria": "Brushless",
+     "subdivisao": "GT1"
     }
    ]
   },
@@ -416,6 +442,16 @@
    ]
   },
   {
+   "nome": "Iguatemi",
+   "apelidos_no_blog": [],
+   "provas": [
+    {
+     "categoria": "Brushless",
+     "subdivisao": "GT1"
+    }
+   ]
+  },
+  {
    "nome": "JP",
    "apelidos_no_blog": [
     "J.P."
@@ -428,6 +464,10 @@
     {
      "categoria": "Gran Turismo",
      "subdivisao": "GT3"
+    },
+    {
+     "categoria": "Brushless",
+     "subdivisao": "GT1"
     }
    ]
   },
@@ -583,7 +623,9 @@
   },
   {
    "nome": "Rafael Lopes",
-   "apelidos_no_blog": [],
+   "apelidos_no_blog": [
+    "Rafael"
+   ],
    "provas": [
     {
      "categoria": "Fórmula Magneto",
@@ -591,6 +633,10 @@
     },
     {
      "categoria": "Gran Turismo",
+     "subdivisao": "GT1"
+    },
+    {
+     "categoria": "Brushless",
      "subdivisao": "GT1"
     }
    ]
@@ -646,6 +692,10 @@
     {
      "categoria": "Gran Turismo",
      "subdivisao": "GT1"
+    },
+    {
+     "categoria": "Brushless",
+     "subdivisao": "GT1"
     }
    ]
   },
@@ -656,6 +706,10 @@
     {
      "categoria": "Fórmula Magneto",
      "subdivisao": "GT2"
+    },
+    {
+     "categoria": "Brushless",
+     "subdivisao": "GT1"
     }
    ]
   },
@@ -690,6 +744,10 @@
     {
      "categoria": "Fórmula Magneto",
      "subdivisao": "GT2"
+    },
+    {
+     "categoria": "Brushless",
+     "subdivisao": "GT1"
     }
    ]
   },
@@ -729,13 +787,13 @@
    "subdivisoes": [
     {
      "subdivisao": "GT1",
-     "tempo_de_corte": null,
+     "tempo_de_corte": "5.6",
      "sobem": 0,
      "rebaixados": 3
     },
     {
      "subdivisao": "GT2",
-     "tempo_de_corte": null,
+     "tempo_de_corte": "5.7",
      "sobem": 3,
      "rebaixados": 3
     }
@@ -781,6 +839,8 @@
      }
     ]
    },
+   "fontes_blog": {},
+   "auditoria": {},
    "classificacao_esperada": {
     "descricao": "Conferida com as planilhas oficiais do Alê GT, após 1 etapa(s). Use como teste de aceitação.",
     "GT1": [
@@ -943,9 +1003,7 @@
       "total_sem_descarte": 17
      }
     ]
-   },
-   "fontes_blog": {},
-   "auditoria": {}
+   }
   },
   {
    "nome": "Gran Turismo Magneto 2026",
@@ -1263,6 +1321,209 @@
       ]
      }
     ]
+   },
+   "fontes_blog": {
+    "5": "https://gtautomodelismo.blogspot.com/2026/11/5-etapa-gran-turismo-magneto-2026.html"
+   },
+   "auditoria": {
+    "5": {
+     "url": "https://gtautomodelismo.blogspot.com/2026/11/5-etapa-gran-turismo-magneto-2026.html",
+     "origem": "carga assistida a partir do link do blog",
+     "registrado_em": "2026-11-13T08:47:08.132Z",
+     "por_subdivisao": {
+      "GT1": [
+       {
+        "pos_no_blog": 1,
+        "nome_no_blog": "Moch",
+        "piloto": "Moch"
+       },
+       {
+        "pos_no_blog": 2,
+        "nome_no_blog": "Samuel",
+        "piloto": "Samuel"
+       },
+       {
+        "pos_no_blog": 3,
+        "nome_no_blog": "Helô Martins",
+        "piloto": "Helo Martins"
+       },
+       {
+        "pos_no_blog": 4,
+        "nome_no_blog": "Rhanan",
+        "piloto": "Rhanan"
+       },
+       {
+        "pos_no_blog": 5,
+        "nome_no_blog": "Rafael",
+        "piloto": "Rafael Lopes"
+       },
+       {
+        "pos_no_blog": 6,
+        "nome_no_blog": "Robá",
+        "piloto": "Gustavo"
+       },
+       {
+        "pos_no_blog": 7,
+        "nome_no_blog": "Cavalca",
+        "piloto": "Cavalca"
+       },
+       {
+        "pos_no_blog": 8,
+        "nome_no_blog": "Luli",
+        "piloto": "Luli"
+       },
+       {
+        "pos_no_blog": 9,
+        "nome_no_blog": "Pezão",
+        "piloto": "Pezão"
+       }
+      ],
+      "GT2": [
+       {
+        "pos_no_blog": 1,
+        "nome_no_blog": "Grego",
+        "piloto": "Grego"
+       },
+       {
+        "pos_no_blog": 2,
+        "nome_no_blog": "Douglas",
+        "piloto": "Douglas"
+       },
+       {
+        "pos_no_blog": 3,
+        "nome_no_blog": "Eder Martins",
+        "piloto": "Eder Martins"
+       },
+       {
+        "pos_no_blog": 4,
+        "nome_no_blog": "Marco Barros",
+        "piloto": "Marco Barros"
+       },
+       {
+        "pos_no_blog": 5,
+        "nome_no_blog": "Raul",
+        "piloto": "Raul Marani"
+       },
+       {
+        "pos_no_blog": 6,
+        "nome_no_blog": "Pita",
+        "piloto": "Pita"
+       },
+       {
+        "pos_no_blog": 7,
+        "nome_no_blog": "Edson",
+        "piloto": "Edson Pedro"
+       },
+       {
+        "pos_no_blog": 8,
+        "nome_no_blog": "Tchelli",
+        "piloto": "Tchelli"
+       },
+       {
+        "pos_no_blog": 9,
+        "nome_no_blog": "Makalé",
+        "piloto": "Makalé"
+       },
+       {
+        "pos_no_blog": 10,
+        "nome_no_blog": "Fonseca",
+        "piloto": "Fonseca"
+       },
+       {
+        "pos_no_blog": 11,
+        "nome_no_blog": "Marco Aurélio",
+        "piloto": "Marco Aurélio"
+       },
+       {
+        "pos_no_blog": 12,
+        "nome_no_blog": "Furlan",
+        "piloto": "Furlan"
+       }
+      ],
+      "GT3": [
+       {
+        "pos_no_blog": 1,
+        "nome_no_blog": "Well",
+        "piloto": "Well"
+       },
+       {
+        "pos_no_blog": 2,
+        "nome_no_blog": "Gerson",
+        "piloto": "Gerson Simionato"
+       },
+       {
+        "pos_no_blog": 3,
+        "nome_no_blog": "Dé",
+        "piloto": "Dé"
+       },
+       {
+        "pos_no_blog": 4,
+        "nome_no_blog": "Eurico",
+        "piloto": "Eurico Seródio"
+       },
+       {
+        "pos_no_blog": 5,
+        "nome_no_blog": "Bola",
+        "piloto": "Bola"
+       },
+       {
+        "pos_no_blog": 6,
+        "nome_no_blog": "Osmar",
+        "piloto": "Osmar"
+       },
+       {
+        "pos_no_blog": 7,
+        "nome_no_blog": "Marcelo",
+        "piloto": "Marcelo"
+       },
+       {
+        "pos_no_blog": 8,
+        "nome_no_blog": "Regis",
+        "piloto": "Regis"
+       },
+       {
+        "pos_no_blog": 9,
+        "nome_no_blog": "Renato Brother",
+        "piloto": "Renato Brother"
+       },
+       {
+        "pos_no_blog": 10,
+        "nome_no_blog": "Marcello Dutra",
+        "piloto": "Marcelo Dutra"
+       },
+       {
+        "pos_no_blog": 11,
+        "nome_no_blog": "Geraldo",
+        "piloto": "Geraldo"
+       },
+       {
+        "pos_no_blog": 12,
+        "nome_no_blog": "Figa",
+        "piloto": "Figa"
+       },
+       {
+        "pos_no_blog": 13,
+        "nome_no_blog": "Lino",
+        "piloto": "Lino"
+       },
+       {
+        "pos_no_blog": 14,
+        "nome_no_blog": "Acquaman",
+        "piloto": "Acquaman"
+       },
+       {
+        "pos_no_blog": 15,
+        "nome_no_blog": "Felipe Dutra",
+        "piloto": "Felipe Dutra"
+       },
+       {
+        "pos_no_blog": 16,
+        "nome_no_blog": "Paulo Tadeu",
+        "piloto": "Paulo Tadeu"
+       }
+      ]
+     }
+    }
    },
    "classificacao_esperada": {
     "descricao": "Conferida com as planilhas oficiais do Alê GT, após 4 etapa(s). Use como teste de aceitação.",
@@ -1893,205 +2154,125 @@
       "total_sem_descarte": 0
      }
     ]
+   }
+  },
+  {
+   "nome": "V Campeonato Brushless 5500KV",
+   "categoria": "Brushless",
+   "inicio": "2026-11-11",
+   "etapas": 6,
+   "descartes": 1,
+   "periodicidade": "semanal",
+   "ultima_etapa_em_dobro": true,
+   "tabela_pontuacao": "Padrão GT Racing",
+   "datas_das_etapas": [
+    "2026-11-11",
+    "2026-11-18",
+    "2026-11-25",
+    "2026-12-02",
+    "2026-12-09",
+    "2026-12-16"
+   ],
+   "subdivisoes": [
+    {
+     "subdivisao": "GT1",
+     "tempo_de_corte": null,
+     "sobem": 0,
+     "rebaixados": 3
+    },
+    {
+     "subdivisao": "GT2",
+     "tempo_de_corte": null,
+     "sobem": 3,
+     "rebaixados": 3
+    },
+    {
+     "subdivisao": "GT3",
+     "tempo_de_corte": null,
+     "sobem": 3,
+     "rebaixados": 0
+    }
+   ],
+   "resultados": {
+    "GT1": [
+     {
+      "etapa": 1,
+      "data": "2026-11-11",
+      "ordem_de_chegada": [
+       "Rhanan",
+       "JP",
+       "Robertinho",
+       "Felipe Dutra",
+       "Douglas",
+       "Iguatemi",
+       "Ari",
+       "Tony",
+       "Adilson Miranda",
+       "Rafael Lopes"
+      ]
+     }
+    ]
    },
    "fontes_blog": {
-    "5": "https://gtautomodelismo.blogspot.com/2026/11/5-etapa-gran-turismo-magneto-2026.html"
+    "1": "https://gtautomodelismo.blogspot.com/2026/11/1-etapa-gt-pro-brushless-5500kv.html?m=1"
    },
    "auditoria": {
-    "5": {
-     "url": "https://gtautomodelismo.blogspot.com/2026/11/5-etapa-gran-turismo-magneto-2026.html",
-     "origem": "carga assistida a partir do link do blog",
-     "registrado_em": "2026-11-13T08:47:08.132Z",
+    "1": {
+     "url": "https://gtautomodelismo.blogspot.com/2026/11/1-etapa-gt-pro-brushless-5500kv.html?m=1",
+     "origem": "blog",
+     "registrado_em": "2026-11-13T18:36:29.598932",
+     "editado_manualmente": false,
      "por_subdivisao": {
       "GT1": [
        {
         "pos_no_blog": 1,
-        "nome_no_blog": "Moch",
-        "piloto": "Moch"
-       },
-       {
-        "pos_no_blog": 2,
-        "nome_no_blog": "Samuel",
-        "piloto": "Samuel"
-       },
-       {
-        "pos_no_blog": 3,
-        "nome_no_blog": "Helô Martins",
-        "piloto": "Helo Martins"
-       },
-       {
-        "pos_no_blog": 4,
         "nome_no_blog": "Rhanan",
         "piloto": "Rhanan"
        },
        {
-        "pos_no_blog": 5,
-        "nome_no_blog": "Rafael",
-        "piloto": "Rafael Lopes"
-       },
-       {
-        "pos_no_blog": 6,
-        "nome_no_blog": "Robá",
-        "piloto": "Gustavo"
-       },
-       {
-        "pos_no_blog": 7,
-        "nome_no_blog": "Cavalca",
-        "piloto": "Cavalca"
-       },
-       {
-        "pos_no_blog": 8,
-        "nome_no_blog": "Luli",
-        "piloto": "Luli"
-       },
-       {
-        "pos_no_blog": 9,
-        "nome_no_blog": "Pezão",
-        "piloto": "Pezão"
-       }
-      ],
-      "GT2": [
-       {
-        "pos_no_blog": 1,
-        "nome_no_blog": "Grego",
-        "piloto": "Grego"
-       },
-       {
         "pos_no_blog": 2,
+        "nome_no_blog": "JP",
+        "piloto": "JP"
+       },
+       {
+        "pos_no_blog": 3,
+        "nome_no_blog": "Robertinho",
+        "piloto": "Robertinho"
+       },
+       {
+        "pos_no_blog": 4,
+        "nome_no_blog": "Felipe",
+        "piloto": "Felipe Dutra"
+       },
+       {
+        "pos_no_blog": 5,
         "nome_no_blog": "Douglas",
         "piloto": "Douglas"
        },
        {
-        "pos_no_blog": 3,
-        "nome_no_blog": "Eder Martins",
-        "piloto": "Eder Martins"
-       },
-       {
-        "pos_no_blog": 4,
-        "nome_no_blog": "Marco Barros",
-        "piloto": "Marco Barros"
-       },
-       {
-        "pos_no_blog": 5,
-        "nome_no_blog": "Raul",
-        "piloto": "Raul Marani"
-       },
-       {
         "pos_no_blog": 6,
-        "nome_no_blog": "Pita",
-        "piloto": "Pita"
+        "nome_no_blog": "Iguatemi",
+        "piloto": "Iguatemi"
        },
        {
         "pos_no_blog": 7,
-        "nome_no_blog": "Edson",
-        "piloto": "Edson Pedro"
+        "nome_no_blog": "Ari",
+        "piloto": "Ari"
        },
        {
         "pos_no_blog": 8,
-        "nome_no_blog": "Tchelli",
-        "piloto": "Tchelli"
+        "nome_no_blog": "Tony",
+        "piloto": "Tony"
        },
        {
         "pos_no_blog": 9,
-        "nome_no_blog": "Makalé",
-        "piloto": "Makalé"
+        "nome_no_blog": "Adilson",
+        "piloto": "Adilson Miranda"
        },
        {
         "pos_no_blog": 10,
-        "nome_no_blog": "Fonseca",
-        "piloto": "Fonseca"
-       },
-       {
-        "pos_no_blog": 11,
-        "nome_no_blog": "Marco Aurélio",
-        "piloto": "Marco Aurélio"
-       },
-       {
-        "pos_no_blog": 12,
-        "nome_no_blog": "Furlan",
-        "piloto": "Furlan"
-       }
-      ],
-      "GT3": [
-       {
-        "pos_no_blog": 1,
-        "nome_no_blog": "Well",
-        "piloto": "Well"
-       },
-       {
-        "pos_no_blog": 2,
-        "nome_no_blog": "Gerson",
-        "piloto": "Gerson Simionato"
-       },
-       {
-        "pos_no_blog": 3,
-        "nome_no_blog": "Dé",
-        "piloto": "Dé"
-       },
-       {
-        "pos_no_blog": 4,
-        "nome_no_blog": "Eurico",
-        "piloto": "Eurico Seródio"
-       },
-       {
-        "pos_no_blog": 5,
-        "nome_no_blog": "Bola",
-        "piloto": "Bola"
-       },
-       {
-        "pos_no_blog": 6,
-        "nome_no_blog": "Osmar",
-        "piloto": "Osmar"
-       },
-       {
-        "pos_no_blog": 7,
-        "nome_no_blog": "Marcelo",
-        "piloto": "Marcelo"
-       },
-       {
-        "pos_no_blog": 8,
-        "nome_no_blog": "Regis",
-        "piloto": "Regis"
-       },
-       {
-        "pos_no_blog": 9,
-        "nome_no_blog": "Renato Brother",
-        "piloto": "Renato Brother"
-       },
-       {
-        "pos_no_blog": 10,
-        "nome_no_blog": "Marcello Dutra",
-        "piloto": "Marcelo Dutra"
-       },
-       {
-        "pos_no_blog": 11,
-        "nome_no_blog": "Geraldo",
-        "piloto": "Geraldo"
-       },
-       {
-        "pos_no_blog": 12,
-        "nome_no_blog": "Figa",
-        "piloto": "Figa"
-       },
-       {
-        "pos_no_blog": 13,
-        "nome_no_blog": "Lino",
-        "piloto": "Lino"
-       },
-       {
-        "pos_no_blog": 14,
-        "nome_no_blog": "Acquaman",
-        "piloto": "Acquaman"
-       },
-       {
-        "pos_no_blog": 15,
-        "nome_no_blog": "Felipe Dutra",
-        "piloto": "Felipe Dutra"
-       },
-       {
-        "pos_no_blog": 16,
-        "nome_no_blog": "Paulo Tadeu",
-        "piloto": "Paulo Tadeu"
+        "nome_no_blog": "Rafael",
+        "piloto": "Rafael Lopes"
        }
       ]
      }
