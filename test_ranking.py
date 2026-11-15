@@ -54,6 +54,10 @@ class RankingCalculationTests(unittest.TestCase):
         self.assertEqual(data["rankings"]["formula1"][0]["indice"], 300)
         self.assertIn("fora do ranking", data["avisos"][0])
 
+    def test_ranking_opt_out_is_independent_of_championship_status(self):
+        self.assertEqual(rows([championship(incluir_no_ranking=False)]), [])
+        self.assertEqual(rows([championship(situacao="encerrado")])[0]["indice"], 300)
+
     def test_double_final_and_discarded_results_still_count(self):
         camp = championship(etapas=2, resultados={"GT2": [
             stage(1, ["Bia", "Caio", "Ana"]),
@@ -225,6 +229,9 @@ class RankingPersistenceTests(unittest.TestCase):
 
             self.assertEqual(pilot_rows()[0]["indice"], 300)
             result["resultados_por_subdivisao"] = {"GT1": ["Outro Teste", "Piloto Teste"]}
+            self.assertEqual(client.post("/api/stages/save-results", json=result).status_code, 409)
+            self.assertEqual(pilot_rows()[0]["indice"], 300)
+            result["substituir_existentes"] = True
             client.post("/api/stages/save-results", json=result).raise_for_status()
             self.assertEqual(pilot_rows()[0]["indice"], 280)
             payload.pop("ranking_categoria")
@@ -281,6 +288,25 @@ class RankingPersistenceTests(unittest.TestCase):
             self.assertIn("Piloto Histórico", [
                 row["piloto"] for row in ranking["rankings"]["formula1"]
             ])
+
+    def test_status_and_ranking_option_survive_legacy_edits_and_restore(self):
+        with TestClient(app) as client:
+            payload = championship(
+                nome="Controle de campeonato", situacao="encerrado", incluir_no_ranking=False
+            )
+            response = client.post("/api/championships", json=payload)
+            response.raise_for_status()
+            camp_id = response.json()["id"]
+            payload.pop("situacao")
+            payload.pop("incluir_no_ranking")
+            client.put(f"/api/championships/{camp_id}", json=payload).raise_for_status()
+            restore_backup_json(export_backup_json())
+            init_db()
+            saved = next(c for c in client.get("/api/data").json()["championships"] if c["nome"] == payload["nome"])
+            self.assertEqual(saved["situacao"], "encerrado")
+            self.assertFalse(saved["incluir_no_ranking"])
+            payload["situacao"] = "invalida"
+            self.assertEqual(client.put(f"/api/championships/{saved['id']}", json=payload).status_code, 422)
 
     def test_legacy_backup_infers_category_and_explicit_choice_survives(self):
         with TestClient(app):

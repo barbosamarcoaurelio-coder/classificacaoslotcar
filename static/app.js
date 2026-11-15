@@ -34,6 +34,8 @@ function toggleTheme() {
 
 // Navegação pelas Abas Inferiores
 function initNavigation() {
+  document.getElementById("filterCampSituacao").addEventListener("change", renderChampionshipsList);
+  document.getElementById("filterCampCategoria").addEventListener("change", renderChampionshipsList);
   document.getElementById("selectRankingCategory").addEventListener("change", loadRanking);
   document.getElementById("btnRefreshRanking").addEventListener("click", loadRanking);
   const navButtons = document.querySelectorAll(".bottom-nav .nav-item");
@@ -348,7 +350,15 @@ function renderChampionshipsList() {
   if (!container) return;
   container.innerHTML = "";
 
-  state.data.championships.forEach(c => {
+  const situacao = document.getElementById("filterCampSituacao").value;
+  const categoria = document.getElementById("filterCampCategoria").value;
+  const filtered = state.data.championships.filter(c =>
+    (!situacao || (c.situacao || "em_andamento") === situacao) &&
+    (!categoria || c.ranking_categoria === categoria));
+  document.getElementById("championshipsCount").textContent =
+    `${filtered.length} de ${state.data.championships.length} campeonatos`;
+  if (!filtered.length) container.textContent = "Nenhum campeonato encontrado com estes filtros.";
+  filtered.forEach(c => {
     const card = document.createElement("div");
     card.className = "card-item";
 
@@ -384,6 +394,7 @@ function renderChampionshipsList() {
       <div class="card-header-row">
         <div>
           <div class="card-title">${c.nome}</div>
+          <div class="card-subtitle">${c.situacao === "encerrado" ? "Encerrado" : "Em andamento"} · ${c.incluir_no_ranking === false ? "Não compõe o ranking" : (c.regras_confirmadas === false ? "Ranking aguarda conferência" : "Compõe o ranking")}</div>
           ${c.regras_confirmadas === false ? '<p class="alert-error">Regras pendentes · fora do ranking</p>' : ''}
           <div class="card-subtitle">Categoria: ${c.categoria} | Tabela: ${c.tabela_pontuacao}</div>
         </div>
@@ -580,18 +591,16 @@ function setupEventListeners() {
     loadClassification();
   });
 
-  // Exportar HTML
-  document.getElementById("btnExportHtml")?.addEventListener("click", () => {
-    if (!state.selectedCampId || !state.selectedSubdiv) return;
-    const url = `/api/classification/${state.selectedCampId}/${state.selectedSubdiv}/export-html`;
-    window.open(url, "_blank");
-  });
-
   // Busca de Pilotos
   document.getElementById("inputSearchPilot")?.addEventListener("input", renderPilotsList);
 
   // WIZARD DE ETAPA
   document.getElementById("btnNewStageWizard")?.addEventListener("click", openNewStageWizard);
+  document.getElementById("btnSearchBlog")?.addEventListener("click", () => {
+    openNewStageWizard();
+    discoverBlogPosts();
+  });
+  document.getElementById("btnDiscoverBlog")?.addEventListener("click", discoverBlogPosts);
   document.getElementById("btnFetchBlog")?.addEventListener("click", handleFetchBlog);
   document.getElementById("btnParseText")?.addEventListener("click", handleParseRawText);
   document.getElementById("btnWizardBack")?.addEventListener("click", () => {
@@ -640,6 +649,9 @@ function initModals() {
 function openNewStageWizard() {
   const camp = state.data.championships.find(c => c.id == state.selectedCampId);
   if (!camp) return;
+  state.wizardParsedData = null;
+  state.wizardCampId = camp.id;
+  document.getElementById("wizardBlogResults").replaceChildren();
 
   document.getElementById("wizardCampName").value = camp.nome;
 
@@ -678,6 +690,50 @@ async function handleFetchBlog() {
   await executeParseBlog({ url });
 }
 
+async function discoverBlogPosts() {
+  const campId = state.wizardCampId;
+  const results = document.getElementById("wizardBlogResults");
+  const button = document.getElementById("btnDiscoverBlog");
+  button.disabled = true;
+  results.classList.remove("alert-error");
+  results.textContent = "Procurando publicações do campeonato...";
+  try {
+    const response = await fetch(`/api/championships/${campId}/blog-search`, { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Não foi possível consultar o blog.");
+    if (state.wizardCampId !== campId) return;
+    results.replaceChildren();
+    if (!data.posts.length) {
+      results.textContent = "Nenhuma etapa identificada com este nome e edição. Você ainda pode colar o link abaixo.";
+    }
+    data.posts.forEach(post => {
+      const card = document.createElement("div");
+      card.className = "card-option";
+      const title = document.createElement("p");
+      title.textContent = post.titulo;
+      const status = document.createElement("p");
+      status.className = "text-muted";
+      status.textContent = `Etapa ${post.etapa} · ${post.ja_cadastrada ? "Já tem resultados: confira antes de substituir" : "Sem resultados cadastrados"}`;
+      const review = document.createElement("button");
+      review.className = "btn btn-outline";
+      review.textContent = "Conferir resultado";
+      review.addEventListener("click", async () => {
+        if (document.getElementById("btnFetchBlog").disabled) return;
+        document.getElementById("wizardBlogUrl").value = post.url;
+        await handleFetchBlog();
+      });
+      card.append(title, status, review);
+      results.appendChild(card);
+    });
+  } catch (error) {
+    if (state.wizardCampId !== campId) return;
+    results.textContent = error.message;
+    results.classList.add("alert-error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function handleParseRawText() {
   const raw_text = document.getElementById("wizardRawText").value.trim();
   const errorEl = document.getElementById("wizardStep1Error");
@@ -691,8 +747,15 @@ async function handleParseRawText() {
 }
 
 async function executeParseBlog(payload) {
+  const campId = state.wizardCampId;
   const btn = document.getElementById("btnFetchBlog");
-  if (btn) btn.textContent = "Buscando...";
+  if (btn?.disabled) return;
+  const reviewButtons = document.querySelectorAll("#wizardBlogResults button, #btnParseText");
+  reviewButtons.forEach(button => { button.disabled = true; });
+  if (btn) {
+    btn.textContent = "Buscando...";
+    btn.disabled = true;
+  }
 
   try {
     const res = await fetch("/api/blog/fetch-and-parse", {
@@ -700,7 +763,7 @@ async function executeParseBlog(payload) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...payload,
-        championship_id: state.selectedCampId
+        championship_id: campId
       })
     });
 
@@ -710,12 +773,14 @@ async function executeParseBlog(payload) {
     }
 
     const data = await res.json();
+    if (state.wizardCampId !== campId) return;
     state.wizardParsedData = data;
 
     // Atualizar etapa se veio no título
     if (data.etapa_num) {
       document.getElementById("wizardEtapaNum").value = data.etapa_num;
     }
+    if (data.data_etapa) document.getElementById("wizardEtapaData").value = data.data_etapa;
 
     // Renderizar Passo 2
     renderWizardStep2(data);
@@ -724,13 +789,19 @@ async function executeParseBlog(payload) {
     errorEl.textContent = err.message;
     errorEl.classList.remove("hidden");
   } finally {
-    if (btn) btn.textContent = "Ler do Blog";
+    reviewButtons.forEach(button => { button.disabled = false; });
+    if (btn) {
+      btn.textContent = "Ler do Blog";
+      btn.disabled = false;
+    }
   }
 }
 
 function renderWizardStep2(parsed) {
   document.getElementById("wizardStep1").classList.add("hidden");
   document.getElementById("wizardStep2").classList.remove("hidden");
+  document.getElementById("wizardReviewStage").textContent =
+    `Etapa ${document.getElementById("wizardEtapaNum").value} · Data: ${document.getElementById("wizardEtapaData").value}`;
 
   // Alerta de campeonato
   const alertEl = document.getElementById("wizardPostAlert");
@@ -744,7 +815,7 @@ function renderWizardStep2(parsed) {
   const container = document.getElementById("wizardSubdivisionsContainer");
   container.innerHTML = "";
 
-  const camp = state.data.championships.find(c => c.id == state.selectedCampId);
+  const camp = state.data.championships.find(c => c.id == state.wizardCampId);
   const subsEsperadas = camp ? camp.subdivisoes.map(s => s.subdivisao) : ["GT1", "GT2", "GT3"];
 
   subsEsperadas.forEach(sub => {
@@ -816,7 +887,7 @@ async function handleSaveWizardResults() {
   const url_blog = document.getElementById("wizardBlogUrl").value.trim();
 
   // Coletar ordem por subdivisão
-  const camp = state.data.championships.find(c => c.id == state.selectedCampId);
+  const camp = state.data.championships.find(c => c.id == state.wizardCampId);
   const subsEsperadas = camp ? camp.subdivisoes.map(s => s.subdivisao) : ["GT1", "GT2", "GT3"];
 
   const resultados_por_subdivisao = {};
@@ -855,7 +926,15 @@ async function handleSaveWizardResults() {
     }
   }
 
+  if (!Number.isInteger(etapa) || etapa < 1 || !data || !Object.keys(resultados_por_subdivisao).length) {
+    alert("Confira o número, a data e os resultados da etapa antes de salvar.");
+    return;
+  }
+  const existing = Object.keys(resultados_por_subdivisao).some(sub =>
+    (camp.resultados[sub] || []).some(result => result.etapa === etapa));
+  if (existing && !confirm("Esta etapa já tem resultados cadastrados. Deseja substituir os resultados das subdivisões conferidas?")) return;
   const btn = document.getElementById("btnWizardSave");
+  btn.disabled = true;
   btn.textContent = "Gravando...";
 
   try {
@@ -863,14 +942,15 @@ async function handleSaveWizardResults() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        championship_id: state.selectedCampId,
+        championship_id: state.wizardCampId,
         etapa,
         data,
         resultados_por_subdivisao,
         origem: url_blog ? "blog" : "manual",
         url_blog: url_blog || null,
         auditoria_detalhes,
-        novos_apelidos
+        novos_apelidos,
+        substituir_existentes: existing
       })
     });
 
@@ -885,6 +965,7 @@ async function handleSaveWizardResults() {
   } catch (err) {
     alert("Erro ao salvar: " + err.message);
   } finally {
+    btn.disabled = false;
     btn.textContent = "Salvar Resultado Oficial";
   }
 }
@@ -1001,6 +1082,8 @@ function openEditChampionshipModal(campId) {
       document.getElementById("campDobroUltima").checked = c.ultima_etapa_em_dobro;
       document.getElementById("campRankingCategoria").value = c.ranking_categoria || "";
       document.getElementById("campRegrasConfirmadas").checked = c.regras_confirmadas !== false;
+      document.getElementById("campSituacao").value = c.situacao || "em_andamento";
+      document.getElementById("campIncluirRanking").checked = c.incluir_no_ranking !== false;
       renderSubdivInputs(c.subdivisoes);
     }
   } else {
@@ -1013,6 +1096,8 @@ function openEditChampionshipModal(campId) {
     document.getElementById("campDobroUltima").checked = true;
     document.getElementById("campRankingCategoria").value = "";
     document.getElementById("campRegrasConfirmadas").checked = true;
+    document.getElementById("campSituacao").value = "em_andamento";
+    document.getElementById("campIncluirRanking").checked = true;
     renderSubdivInputs([
       { subdivisao: "GT1", tempo_de_corte: "5.9s", sobem: 0, rebaixados: 3 },
       { subdivisao: "GT2", tempo_de_corte: "6.1s", sobem: 3, rebaixados: 3 },
@@ -1080,7 +1165,9 @@ async function handleChampionshipSubmit(e) {
     nome, categoria, inicio, etapas, descartes, periodicidade,
     tabela_pontuacao, ultima_etapa_em_dobro, subdivisoes,
     ranking_categoria: document.getElementById("campRankingCategoria").value || null,
-    regras_confirmadas: document.getElementById("campRegrasConfirmadas").checked
+    regras_confirmadas: document.getElementById("campRegrasConfirmadas").checked,
+    situacao: document.getElementById("campSituacao").value,
+    incluir_no_ranking: document.getElementById("campIncluirRanking").checked
   };
 
   const url = campId ? `/api/championships/${campId}` : `/api/championships`;

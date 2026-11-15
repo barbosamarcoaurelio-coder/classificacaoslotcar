@@ -2,9 +2,69 @@ import re
 import unicodedata
 import httpx
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Tuple, Optional
 import difflib
+
+BLOG_FEED_URL = "https://gtautomodelismo.blogspot.com/feeds/posts/default"
+
+
+def championship_search_tokens(text: str) -> set:
+    text = re.sub(r"(?<=\d)(?=[a-z])|(?<=[a-z])(?=\d)", " ", normalize_str(text))
+    return set(text.split()) - {"campeonato", "de", "da", "do", "dos"}
+
+
+async def find_championship_posts(championship: Dict[str, Any]) -> List[Dict[str, Any]]:
+    required = championship_search_tokens(championship["nome"])
+    posts = {}
+    offset = 1
+    params = {
+        "alt": "json", "max-results": 50,
+        "published-min": championship["inicio"] + "T00:00:00-03:00",
+        "published-max": datetime.now(timezone.utc).isoformat(),
+    }
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        while True:
+            response = await client.get(BLOG_FEED_URL, params={**params, "start-index": offset})
+            response.raise_for_status()
+            feed = response.json()["feed"]
+            entries = feed.get("entry", [])
+            total = int(feed["openSearch$totalResults"]["$t"])
+            if not entries:
+                if offset <= total:
+                    raise ValueError("O blog retornou uma página incompleta. Tente novamente.")
+                break
+            for entry in entries:
+                title = entry["title"]["$t"]
+                if re.search(r"\blivre\b|warm.?up|treino|duplas|endurance", normalize_str(title)):
+                    continue
+                stage_match = re.search(r"\b(\d+)\s*[ªºa]?\s*etapa\b", title, re.I)
+                if not stage_match or not 1 <= int(stage_match[1]) <= championship["etapas"]:
+                    continue
+                html = entry.get("content", {}).get("$t", "")
+                soup = BeautifulSoup(html, "html.parser")
+                headers = [
+                    table.get_text(" ", strip=True).split("Resultados", 1)[0]
+                    for table in soup.find_all("table")
+                    if "Resultados" in table.get_text() and "Piloto" in table.get_text()
+                ]
+                if not any(required <= championship_search_tokens(title + " " + header) for header in headers):
+                    continue
+                link = next((x["href"] for x in entry["link"] if x["rel"] == "alternate"), None)
+                if not link or not link.startswith("https://gtautomodelismo.blogspot.com/"):
+                    raise ValueError("A publicação não contém um link válido do blog oficial.")
+                stage = int(stage_match[1])
+                posts[link] = {
+                    "titulo": title, "url": link, "etapa": stage,
+                    "ja_cadastrada": any(
+                        result["etapa"] == stage
+                        for results in championship["resultados"].values() for result in results
+                    ),
+                }
+            offset += len(entries)
+            if offset > total:
+                break
+    return sorted(posts.values(), key=lambda post: (post["etapa"], post["titulo"]), reverse=True)
 
 def normalize_str(s: str) -> str:
     if not s:
@@ -124,11 +184,16 @@ def parse_blog_content(
             
     tables = soup.find_all("table")
     subdivisoes_encontradas: Dict[str, List[Dict[str, Any]]] = {}
+    dates = set()
+    warnings = []
     
     for t in tables:
         txt = t.get_text("\n", strip=True)
         if "Resultados" not in txt or "Piloto" not in txt:
             continue
+        race_date = re.search(r"\b(\d{2}/\d{2}/\d{4})\b", txt.split("Resultados", 1)[0])
+        if race_date:
+            dates.add(datetime.strptime(race_date[1], "%d/%m/%Y").date().isoformat())
             
         sub_match = re.search(r"\b(GT[123])\b", txt, re.IGNORECASE)
         if not sub_match:
@@ -137,6 +202,8 @@ def parse_blog_content(
                 sub_match = re.search(r"\b(GT[123])\b", prev.get_text(), re.IGNORECASE)
                 
         sub_nome = sub_match.group(1).upper() if sub_match else "GT1"
+        if not sub_match:
+            warnings.append("A fonte não informa a subdivisão. GT1 foi sugerida; confirme antes de salvar.")
         
         linhas_pilotos = []
         rows = t.find_all("tr")
@@ -166,6 +233,12 @@ def parse_blog_content(
                 })
                 
         if linhas_pilotos:
+            if sub_nome in subdivisoes_encontradas:
+                previous = subdivisoes_encontradas[sub_nome]
+                if [(p["nome_no_blog"], p["total_voltas"]) for p in previous] != [
+                    (p["nome_no_blog"], p["total_voltas"]) for p in linhas_pilotos
+                ]:
+                    raise ValueError(f"O post contém resultados diferentes para {sub_nome}. Escolha uma publicação com apenas a fase desejada.")
             subdivisoes_encontradas[sub_nome] = linhas_pilotos
             
     # Se nenhuma tabela HTML foi encontrada (ex.: usuário colou texto puro)
@@ -177,10 +250,15 @@ def parse_blog_content(
             pilotos_por_sub
         )
         
+    if len(dates) > 1:
+        raise ValueError("O post contém mais de uma data de corrida. Confira a fonte antes de importar.")
+    if not dates:
+        warnings.append("Data da corrida não identificada no post. Volte e confira a data antes de salvar.")
     return {
         "titulo": title,
+        "data_etapa": next(iter(dates), None),
         "etapa_num": etapa_num,
-        "alerta_campeonato": alerta_campeonato,
+        "alerta_campeonato": " ".join(dict.fromkeys(([alerta_campeonato] if alerta_campeonato else []) + warnings)) or None,
         "subdivisoes": subdivisoes_encontradas
     }
 

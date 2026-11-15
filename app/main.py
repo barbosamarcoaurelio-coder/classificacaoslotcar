@@ -1,8 +1,9 @@
 import json
 import os
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Literal
 
+import httpx
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, status, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
@@ -19,7 +20,7 @@ from app.scoring import (
     calculate_classification, generate_export_html
 )
 from app.blog_importer import (
-    fetch_blog_html, parse_blog_content
+    fetch_blog_html, parse_blog_content, find_championship_posts
 )
 
 app = FastAPI(title="Classificação Geral · GT Racing Slot Car")
@@ -160,6 +161,8 @@ def get_all_data():
             "categoria": r["categoria"],
             "ranking_categoria": r["ranking_categoria"],
             "regras_confirmadas": bool(r["regras_confirmadas"]),
+            "situacao": r["situacao"],
+            "incluir_no_ranking": bool(r["incluir_no_ranking"]),
             "inicio": r["inicio"],
             "etapas": r["etapas"],
             "descartes": r["descartes"],
@@ -315,15 +318,37 @@ async def blog_fetch_and_parse(req: BlogFetchRequest, admin: dict = Depends(requ
     if not html_content:
         raise HTTPException(status_code=400, detail="Forneça uma URL válida ou cole o texto do post.")
         
-    parsed = parse_blog_content(
-        html_content,
-        pilotos,
-        campeonato_nome=camp_nome,
-        categoria_nome=cat_nome,
-        pilotos_por_sub=pilotos_por_sub
-    )
+    try:
+        parsed = parse_blog_content(
+            html_content,
+            pilotos,
+            campeonato_nome=camp_nome,
+            categoria_nome=cat_nome,
+            pilotos_por_sub=pilotos_por_sub
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     
     return parsed
+
+@app.post("/api/championships/{championship_id}/blog-search")
+async def search_championship_blog(championship_id: int, admin: dict = Depends(require_admin)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM championships WHERE id = ?", (championship_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Campeonato não encontrado.")
+    championship = dict(row)
+    championship["resultados"] = json.loads(row["resultados"])
+    try:
+        posts = await find_championship_posts(championship)
+    except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+        raise HTTPException(
+            status_code=502, detail="Não foi possível consultar os resultados do blog. Tente novamente ou cole o link do post."
+        ) from exc
+    return {"posts": posts}
 
 # Salvar Resultado de Etapa (Manual ou via Importação do Blog)
 class SaveStageResultsRequest(BaseModel):
@@ -335,6 +360,7 @@ class SaveStageResultsRequest(BaseModel):
     url_blog: Optional[str] = None
     auditoria_detalhes: Optional[Dict[str, Any]] = None # detalhes do blog se aplicável
     novos_apelidos: Optional[Dict[str, str]] = None # piloto -> novo apelido a salvar
+    substituir_existentes: bool = False
 
 @app.post("/api/stages/save-results")
 def save_stage_results(req: SaveStageResultsRequest, admin: dict = Depends(require_admin)):
@@ -349,6 +375,12 @@ def save_stage_results(req: SaveStageResultsRequest, admin: dict = Depends(requi
         
     cat_nome = camp["categoria"]
     resultados = json.loads(camp["resultados"])
+    if not req.substituir_existentes and any(
+        result["etapa"] == req.etapa
+        for sub in req.resultados_por_subdivisao for result in resultados.get(sub, [])
+    ):
+        conn.close()
+        raise HTTPException(status_code=409, detail="Esta etapa já tem resultados. Reabra a conferência e confirme a substituição para salvar.")
     fontes_blog = json.loads(camp["fontes_blog"])
     auditoria = json.loads(camp["auditoria"])
     datas = json.loads(camp["datas_das_etapas"])
@@ -509,6 +541,8 @@ class ChampionshipCreate(BaseModel):
     ultima_etapa_em_dobro: bool = True
     ranking_categoria: Optional[RankingCategory] = None
     regras_confirmadas: Optional[bool] = None
+    situacao: Optional[Literal["em_andamento", "encerrado"]] = None
+    incluir_no_ranking: Optional[bool] = None
     subdivisoes: List[Dict[str, Any]] # [{"subdivisao": "GT1", "tempo_de_corte": "5.9s", "sobem": 0, "rebaixados": 3}, ...]
 
 @app.post("/api/championships")
@@ -528,8 +562,9 @@ def create_championship(req: ChampionshipCreate, admin: dict = Depends(require_a
         INSERT INTO championships (
             nome, categoria, inicio, etapas, descartes, periodicidade,
             ultima_etapa_em_dobro, tabela_pontuacao, datas_das_etapas,
-            subdivisoes, resultados, fontes_blog, auditoria, ranking_categoria, regras_confirmadas
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            subdivisoes, resultados, fontes_blog, auditoria, ranking_categoria, regras_confirmadas,
+            situacao, incluir_no_ranking
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         req.nome,
         req.categoria,
@@ -545,7 +580,9 @@ def create_championship(req: ChampionshipCreate, admin: dict = Depends(require_a
         json.dumps({}, ensure_ascii=False),
         json.dumps({}, ensure_ascii=False),
         ranking_category,
-        0 if req.regras_confirmadas is False else 1
+        0 if req.regras_confirmadas is False else 1,
+        req.situacao or "em_andamento",
+        0 if req.incluir_no_ranking is False else 1
     ))
     new_id = c.lastrowid
     conn.commit()
@@ -570,7 +607,8 @@ def update_championship(championship_id: int, req: ChampionshipCreate, admin: di
         UPDATE championships SET
             nome = ?, categoria = ?, inicio = ?, etapas = ?, descartes = ?,
             periodicidade = ?, ultima_etapa_em_dobro = ?, tabela_pontuacao = ?,
-            datas_das_etapas = ?, subdivisoes = ?, ranking_categoria = ?, regras_confirmadas = ?
+            datas_das_etapas = ?, subdivisoes = ?, ranking_categoria = ?, regras_confirmadas = ?,
+            situacao = ?, incluir_no_ranking = ?
         WHERE id = ?
     """, (
         req.nome,
@@ -585,6 +623,8 @@ def update_championship(championship_id: int, req: ChampionshipCreate, admin: di
         json.dumps(req.subdivisoes, ensure_ascii=False),
         req.ranking_categoria or camp["ranking_categoria"] or identify_ranking_category(req.model_dump()),
         camp["regras_confirmadas"] if req.regras_confirmadas is None else int(req.regras_confirmadas),
+        req.situacao or camp["situacao"],
+        camp["incluir_no_ranking"] if req.incluir_no_ranking is None else int(req.incluir_no_ranking),
         championship_id
     ))
     conn.commit()

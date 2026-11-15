@@ -1,8 +1,8 @@
-const CACHE_NAME = "gtracing-pwa-v4-historico";
+const CACHE_NAME = "gtracing-pwa-v5-campeonatos";
 const STATIC_ASSETS = [
   "/",
   "/static/style.css?v=4",
-  "/static/app.js?v=6",
+  "/static/app.js?v=7",
   "/static/manifest.json",
   "/static/icon-192.png",
   "/static/icon-512.png",

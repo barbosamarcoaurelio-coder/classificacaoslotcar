@@ -34,6 +34,35 @@ Para persistir os dados permanentemente em produção (sem depender do ciclo de 
 2. **Cole o link do post do blog** (ou cole o texto da página) e clique em **"Ler do Blog"**. O sistema extrai automaticamente a tabela de resultados das subdivisões (GT1, GT2, GT3), lê o número da etapa e faz o reconhecimento inteligente dos pilotos (por nome exato, apelidos e prefixos).
 3. **Confira a lista de chegada** (vincule pilotos não reconhecidos ou confirme novos pilotos com 1 clique) e clique em **"Salvar Resultado Oficial"**.
 
+### Busca assistida no blog
+
+Após entrar como administrador, selecione o campeonato em **Classificação** e
+clique em **Buscar etapas no blog**. A busca considera o nome e a edição do
+campeonato, percorre as páginas do feed e ignora LIVRE, treinos, warm-ups, duplas
+e endurance por equipes. Publicações sem número de etapa devem ser importadas
+pelo link e conferidas manualmente.
+
+Escolha **Conferir resultado**, confira a etapa, a data efetiva da corrida,
+as subdivisões e os pilotos e clique em **Salvar Resultado Oficial**.
+Consultar o blog, abrir a classificação ou fazer login nunca publica resultados.
+Se já houver resultados, a substituição exige confirmação explícita; o servidor
+rejeita a sobrescrita sem essa confirmação. Se o nome não corresponder ao blog,
+cole o link do post no mesmo assistente.
+
+### Situação e filtros dos campeonatos
+
+Em **Campeonatos → Editar**, escolha **Em andamento** ou **Encerrado**.
+Os dois filtros da aba combinam situação e categoria do ranking
+(Fórmula 1, Magneto ou Brushless). Encerrar não apaga resultados nem retira
+pontos do ranking.
+
+A opção **Incluir na pontuação do ranking de pilotos** controla a participação
+do campeonato no ranking, independentemente da situação. As regras também
+precisam estar conferidas. Desmarcar não altera a classificação do campeonato.
+Situação e inclusão são preservadas em backups e edições antigas da API.
+Cadastros e backups antigos começam **Em andamento**, sem presumir o encerramento,
+e mantêm a inclusão no ranking; históricos com regras pendentes continuam fora.
+
 ## Ranking de Pilotos · Copa dos Campeões
 
 Na aba **Ranking**, escolha **Fórmula 1**, **Magneto** ou **Brushless**. O botão
@@ -65,7 +94,7 @@ dados, em SQLite ou PostgreSQL, na inicialização.
 ### Histórico com regras pendentes
 
 Ao cadastrar resultados antigos sem regulamento confirmado, desmarque **Regras
-conferidas: incluir no ranking**. Os resultados ficam salvos e identificados como
+e subdivisões conferidas**. Os resultados ficam salvos e identificados como
 provisórios, fora do ranking. Confira tabela de pontos, total de etapas, descartes,
 dobra da final e subdivisões antes de marcar. A última etapa encontrada no blog
 não é necessariamente a final do campeonato. `regras_confirmadas` é preservado em
@@ -73,7 +102,7 @@ backups; campeonatos existentes e backups antigos continuam confirmados por padr
 
 Testes específicos, em banco temporário:
 ```bash
-python3 -m unittest test_ranking.py
+python3 -m unittest test_ranking.py test_blog_importer.py
 ```
 
 ## 💾 Como fazer backup dos dados

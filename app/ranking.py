@@ -35,6 +35,8 @@ def calculate_rankings(
     warnings = []
     for championship in championships:
         name = championship["nome"]
+        if not championship.get("incluir_no_ranking", True):
+            continue
         if not championship.get("regras_confirmadas", True):
             warnings.append(
                 f"{name}: histórico salvo, mas fora do ranking até conferir as regras do campeonato."
