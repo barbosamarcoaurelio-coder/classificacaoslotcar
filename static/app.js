@@ -194,6 +194,7 @@ function populateChampionshipSelect(championships) {
   sel.disabled = championships.length === 0;
   document.getElementById("btnSearchBlog").disabled = sel.disabled;
   document.getElementById("btnNewStageWizard").disabled = sel.disabled;
+  document.getElementById("btnExportClassification").disabled = sel.disabled;
   if (!championships.length) {
     const opt = document.createElement("option");
     opt.textContent = "Nenhum campeonato em andamento";
@@ -275,6 +276,16 @@ function renderClassificationTable(info) {
     }
   }
 
+  document.getElementById("classificationTableWrapper").innerHTML = buildClassificationTable(info);
+
+  // Ajustar legenda se sobem/rebaixados forem 0
+  const legProm = document.getElementById("legendPromotion");
+  const legReleg = document.getElementById("legendRelegation");
+  if (legProm) legProm.style.display = info.sobem > 0 ? "inline-flex" : "none";
+  if (legReleg) legReleg.style.display = info.rebaixados > 0 ? "inline-flex" : "none";
+}
+
+function buildClassificationTable(info) {
   // Cabeçalhos das Etapas (todas do campeonato, incluindo faltantes)
   const etapasTh = info.etapas_info.map(e => {
     const date = /^(\d{4})-(\d{2})-(\d{2})$/.exec(e.data || "");
@@ -346,7 +357,7 @@ function renderClassificationTable(info) {
     `;
   }).join("");
 
-  const tableHtml = `
+  return `
     <table class="ranking-table">
       <thead>
         <tr>
@@ -364,14 +375,6 @@ function renderClassificationTable(info) {
       </tbody>
     </table>
   `;
-
-  document.getElementById("classificationTableWrapper").innerHTML = tableHtml;
-
-  // Ajustar legenda se sobem/rebaixados forem 0
-  const legProm = document.getElementById("legendPromotion");
-  const legReleg = document.getElementById("legendRelegation");
-  if (legProm) legProm.style.display = info.sobem > 0 ? "inline-flex" : "none";
-  if (legReleg) legReleg.style.display = info.rebaixados > 0 ? "inline-flex" : "none";
 }
 
 // ABA 2: RENDERIZAR CAMPEONATOS
@@ -565,6 +568,7 @@ function renderCategoriesList() {
 
 // CONFIGURAÇÃO DE EVENT LISTENERS
 function setupEventListeners() {
+  document.getElementById("btnExportClassification").addEventListener("click", exportClassification);
   // Alternar Tema
   document.getElementById("btnThemeToggle")?.addEventListener("click", toggleTheme);
 
@@ -665,12 +669,16 @@ function openModal(id) {
 function closeModal(id) {
   const m = document.getElementById(id);
   if (m) m.classList.add("hidden");
+  if (id === "modalClassificationExport") {
+    clearClassificationExports();
+    document.getElementById("btnExportClassification").focus();
+  }
 }
 
 function initModals() {
   document.querySelectorAll(".modal-backdrop").forEach(backdrop => {
     backdrop.addEventListener("click", (e) => {
-      if (e.target === backdrop) backdrop.classList.add("hidden");
+      if (e.target === backdrop) closeModal(backdrop.id);
     });
   });
 }

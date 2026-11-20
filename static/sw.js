@@ -1,8 +1,10 @@
-const CACHE_NAME = "gtracing-pwa-v7-datas-etapas";
+const CACHE_NAME = "gtracing-pwa-v8-exportacao";
 const STATIC_ASSETS = [
   "/",
-  "/static/style.css?v=5",
-  "/static/app.js?v=9",
+  "/static/style.css?v=6",
+  "/static/app.js?v=10",
+  "/static/classification-export.js?v=1",
+  "/static/html2canvas-1.4.1.min.js",
   "/static/manifest.json",
   "/static/icon-192.png",
   "/static/icon-512.png",

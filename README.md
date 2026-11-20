@@ -121,7 +121,23 @@ Testes específicos, em banco temporário:
 python3 -m unittest test_ranking.py test_blog_importer.py
 ```
 
+## 📤 Exportar classificação
+
+Na aba **Classif.**, toque em **Exportar classificação** ao lado dos seletores.
+É gerado um PNG por subdivisão com pilotos, usando a classificação oficial do
+campeonato selecionado, todas as linhas e as colunas até a última etapa disputada.
+As imagens incluem logo, data, descartes, cores, projeções e legenda; resultados
+provisórios continuam identificados. Os cálculos não são alterados.
+
+Confira as prévias e use **Enviar pelo WhatsApp / Compartilhar**. Quando o
+navegador não aceita vários arquivos juntos, use os botões de cada subdivisão.
+No iPhone, **Salvar no rolo da câmera** abre a folha de compartilhamento:
+escolha **Salvar imagem**, repetindo por subdivisão. Sem suporte a arquivos no
+compartilhamento, o PNG é baixado; abra Downloads/Arquivos para salvar ou enviar.
+A biblioteca html2canvas 1.4.1 está incluída localmente no cache da PWA.
+
 ## 💾 Como fazer backup dos dados
+
 - **Download do Backup:** Na aba **Categorias**, clique em **"💾 Backup / Restaurar"** > **"Download do Backup (JSON)"**. O arquivo completo é baixado com todas as categorias, pilotos, tabelas, campeonatos e resultados.
 - **Restauração:** No mesmo modal, clique em **"Escolher arquivo"** (`.json`) e clique em **"Substituir Banco pelo Arquivo"**.
 
