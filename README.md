@@ -72,6 +72,15 @@ na classificação se faltar a outras etapas já realizadas; essas ausências va
 Simulações e projeções usam os mesmos participantes; um recorte por etapa
 considera apenas os resultados até aquele momento. Nenhum histórico é apagado.
 
+Ao salvar a edição de um piloto, seu nome anterior e os apelidos informados
+também são unificados nos resultados históricos de todos os campeonatos.
+As posições, datas, subdivisões e nomes originais do blog na auditoria são
+preservados; classificação e ranking são recalculados pelas mesmas regras.
+Renomear mantém o nome anterior como apelido para futuras importações.
+Se outro cadastro usar o mesmo nome/apelido, ou se a unificação colocar o
+piloto duas vezes na mesma etapa (inclusive em subdivisões diferentes),
+o app informa o conflito e não altera nenhum registro.
+
 A opção **Incluir na pontuação do ranking de pilotos** controla a participação
 do campeonato no ranking, independentemente da situação. As regras também
 precisam estar conferidas. Desmarcar não altera a classificação do campeonato.

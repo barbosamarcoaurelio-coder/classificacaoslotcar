@@ -1,8 +1,8 @@
-const CACHE_NAME = "gtracing-pwa-v8-exportacao";
+const CACHE_NAME = "gtracing-pwa-v9-identidade-pilotos";
 const STATIC_ASSETS = [
   "/",
   "/static/style.css?v=6",
-  "/static/app.js?v=10",
+  "/static/app.js?v=11",
   "/static/classification-export.js?v=1",
   "/static/html2canvas-1.4.1.min.js",
   "/static/manifest.json",

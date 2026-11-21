@@ -210,6 +210,124 @@ class RankingPersistenceTests(unittest.TestCase):
         self.environment.stop()
         self.directory.cleanup()
 
+    def identity_fixture(self, client, results):
+        payload = championship(
+            nome="Identidade de piloto", etapas=3, descartes=1,
+            ultima_etapa_em_dobro=False, tabela_pontuacao="Padrão GT Racing",
+        )
+        response = client.post("/api/championships", json=payload)
+        response.raise_for_status()
+        camp_id = response.json()["id"]
+        pilot_payload = {"nome": "Regis Bock", "apelidos_no_blog": [],
+                         "provas": [{"categoria": payload["categoria"], "subdivisao": "GT1"}]}
+        response = client.post("/api/pilots", json=pilot_payload)
+        response.raise_for_status()
+        pilot_id = response.json()["id"]
+        for number, divisions in enumerate(results, 1):
+            client.post("/api/stages/save-results", json={
+                "championship_id": camp_id, "etapa": number, "data": "2026-08-04",
+                "resultados_por_subdivisao": divisions, "origem": "blog",
+                "url_blog": "https://example.com/resultados",
+                "auditoria_detalhes": {sub: [
+                    {"pos_no_blog": i + 1, "nome_no_blog": name, "piloto": name}
+                    for i, name in enumerate(names)
+                ] for sub, names in divisions.items()},
+            }).raise_for_status()
+        data = client.get("/api/data").json()
+        duplicate = next(p for p in data["pilots"] if p["nome"] == "Regis")
+        client.delete(f"/api/pilots/{duplicate['id']}").raise_for_status()
+        pilot_payload["apelidos_no_blog"] = ["Regis"]
+        return camp_id, pilot_id, pilot_payload
+
+    def test_pilot_alias_unifies_historical_points_ranking_and_audit(self):
+        with TestClient(app) as client:
+            camp_id, pilot_id, payload = self.identity_fixture(client, [
+                {"GT1": ["Outro Identidade", "Regis"]},
+                {"GT1": ["Regis Bock", "Outro Identidade"]},
+                {"GT1": ["Outro Identidade"]},
+            ])
+            response = client.post("/api/championships", json=championship(
+                nome="Histórico da identidade", tabela_pontuacao="Padrão GT Racing"
+            ))
+            response.raise_for_status()
+            history_id = response.json()["id"]
+            client.post("/api/stages/save-results", json={
+                "championship_id": history_id, "etapa": 1, "data": "2026-07-04",
+                "resultados_por_subdivisao": {"GT2": ["Regis Bock"]},
+            }).raise_for_status()
+            before_data = client.get("/api/data").json()
+            before = next(c for c in before_data["championships"] if c["id"] == camp_id)
+            payload["nome"] = "Régis Bock"
+            response = client.put(f"/api/pilots/{pilot_id}", json=payload)
+            response.raise_for_status()
+            affected = sum(any(
+                name in ["Regis", "Regis Bock"]
+                for stages in c["resultados"].values()
+                for result in stages for name in result["ordem_de_chegada"]
+            ) for c in before_data["championships"])
+            self.assertEqual(response.json()["campeonatos_atualizados"], affected)
+            after = next(c for c in client.get("/api/data").json()["championships"] if c["id"] == camp_id)
+            expected = copy.deepcopy(before)
+            for result in expected["resultados"]["GT1"]:
+                result["ordem_de_chegada"] = [
+                    "Régis Bock" if name in ["Regis", "Regis Bock"] else name
+                    for name in result["ordem_de_chegada"]
+                ]
+            for audit in expected["auditoria"].values():
+                for entry in audit["por_subdivisao"]["GT1"]:
+                    if entry["piloto"] in ["Regis", "Regis Bock"]:
+                        entry["piloto"] = "Régis Bock"
+            self.assertEqual(after, expected)
+            history = next(c for c in client.get("/api/data").json()["championships"] if c["id"] == history_id)
+            self.assertEqual(history["resultados"]["GT2"][0]["ordem_de_chegada"], ["Régis Bock"])
+            self.assertEqual(history["resultados"]["GT2"][0]["data"], "2026-07-04")
+            classification = client.get(f"/api/classification/{camp_id}/GT1").json()["classificacao"]
+            regis = [row for row in classification if "Bock" in row["piloto"] or row["piloto"] == "Regis"]
+            self.assertEqual(len(regis), 1)
+            self.assertEqual(regis[0]["total_sem_descarte"], 58)
+            self.assertEqual(regis[0]["total_com_descarte"], 58)
+            self.assertTrue(regis[0]["etapas"]["1"]["presente"])
+            self.assertTrue(regis[0]["etapas"]["2"]["presente"])
+            self.assertFalse(regis[0]["etapas"]["3"]["presente"])
+            ranking = client.get("/api/rankings").json()["rankings"]["formula1"]
+            row = next(row for row in ranking if row["piloto"] == "Régis Bock")
+            self.assertEqual(row["participacoes"], 2)
+            self.assertEqual(row["indice"], 290)
+            self.assertNotIn("Regis", [row["piloto"] for row in ranking])
+            saved = next(p for p in client.get("/api/data").json()["pilots"] if p["id"] == pilot_id)
+            self.assertIn("Regis Bock", saved["apelidos_no_blog"])
+            response = client.put(f"/api/pilots/{pilot_id}", json=payload)
+            self.assertEqual(response.json()["campeonatos_atualizados"], 0)
+
+    def test_pilot_alias_conflicts_do_not_change_any_records(self):
+        with TestClient(app) as client:
+            _, pilot_id, payload = self.identity_fixture(client, [{"GT1": ["Regis"]}])
+            client.post("/api/pilots", json={
+                "nome": "Outro cadastro", "apelidos_no_blog": ["Régis"], "provas": []
+            }).raise_for_status()
+            before = client.get("/api/data").json()
+            response = client.put(f"/api/pilots/{pilot_id}", json=payload)
+            self.assertEqual(response.status_code, 409)
+            self.assertIn("Outro cadastro", response.json()["detail"])
+            self.assertEqual(client.get("/api/data").json(), before)
+
+    def test_pilot_unification_rejects_duplicate_participation_atomically(self):
+        for divisions in [
+            {"GT1": ["Regis", "Regis Bock"]},
+            {"GT1": ["Regis"], "GT2": ["Regis Bock"]},
+        ]:
+            with self.subTest(divisions=divisions), TestClient(app) as client:
+                camp_id, pilot_id, payload = self.identity_fixture(client, [
+                    {"GT1": ["Regis"]}, divisions
+                ])
+                before = client.get("/api/data").json()
+                response = client.put(f"/api/pilots/{pilot_id}", json=payload)
+                self.assertEqual(response.status_code, 409)
+                self.assertIn("etapa 2", response.json()["detail"])
+                self.assertEqual(client.get("/api/data").json(), before)
+                client.delete(f"/api/championships/{camp_id}").raise_for_status()
+                client.delete(f"/api/pilots/{pilot_id}").raise_for_status()
+
     def test_legacy_migration_preserves_data_and_ranking_after_reschedule(self):
         conn = sqlite3.connect(os.environ["DB_PATH"])
         conn.execute("""CREATE TABLE championships (

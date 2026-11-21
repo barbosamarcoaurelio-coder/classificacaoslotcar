@@ -20,7 +20,7 @@ from app.scoring import (
     calculate_classification, generate_export_html
 )
 from app.blog_importer import (
-    fetch_blog_html, parse_blog_content, find_championship_posts
+    fetch_blog_html, parse_blog_content, find_championship_posts, normalize_str
 )
 
 app = FastAPI(title="Classificação Geral · GT Racing Slot Car")
@@ -654,15 +654,75 @@ def create_pilot(req: PilotCreate, admin: dict = Depends(require_admin)):
 
 @app.put("/api/pilots/{pilot_id}")
 def update_pilot(pilot_id: int, req: PilotCreate, admin: dict = Depends(require_admin)):
+    nome = req.nome.strip()
+    if not normalize_str(nome):
+        raise HTTPException(status_code=422, detail="Informe um nome válido para o piloto.")
     conn = get_db()
-    c = conn.cursor()
-    c.execute(
-        "UPDATE pilots SET nome = ?, apelidos = ?, provas = ? WHERE id = ?",
-        (req.nome.strip(), json.dumps(req.apelidos_no_blog, ensure_ascii=False), json.dumps(req.provas, ensure_ascii=False), pilot_id)
-    )
-    conn.commit()
-    conn.close()
-    return {"ok": True}
+    try:
+        c = conn.cursor()
+        c.execute("SELECT * FROM pilots WHERE id = ?", (pilot_id,))
+        piloto = c.fetchone()
+        if not piloto:
+            raise HTTPException(status_code=404, detail="Piloto não encontrado.")
+        apelidos = list(dict.fromkeys(a.strip() for a in req.apelidos_no_blog if a.strip()))
+        if piloto["nome"] != nome and piloto["nome"] not in apelidos:
+            apelidos.append(piloto["nome"])
+        identidades = {normalize_str(n) for n in [nome, piloto["nome"], *apelidos]} - {""}
+        c.execute("SELECT nome, apelidos FROM pilots WHERE id != ?", (pilot_id,))
+        for outro in c.fetchall():
+            nomes_outro = {normalize_str(n) for n in [outro["nome"], *json.loads(outro["apelidos"])]} - {""}
+            if identidades & nomes_outro:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Nome ou apelido também pertence a {outro['nome']}. Confira os cadastros antes de unificar."
+                )
+
+        c.execute("SELECT id, nome, resultados, auditoria FROM championships")
+        atualizacoes = []
+        for camp in c.fetchall():
+            resultados = json.loads(camp["resultados"])
+            alterado = False
+            presencas = set()
+            for etapas in resultados.values():
+                for etapa in etapas:
+                    ordem = etapa["ordem_de_chegada"]
+                    for i, nome_resultado in enumerate(ordem):
+                        if normalize_str(nome_resultado) not in identidades:
+                            continue
+                        numero = etapa["etapa"]
+                        if numero in presencas:
+                            raise HTTPException(
+                                status_code=409,
+                                detail=f"{camp['nome']}, etapa {numero}: o piloto aparece mais de uma vez. Confira o resultado antes de unificar."
+                            )
+                        presencas.add(numero)
+                        if nome_resultado != nome:
+                            ordem[i] = nome
+                            alterado = True
+            if not alterado:
+                continue
+            auditoria = json.loads(camp["auditoria"])
+            for registro in auditoria.values():
+                por_subdivisao = registro.get("por_subdivisao", {})
+                for entradas in por_subdivisao.values():
+                    if not isinstance(entradas, list):
+                        continue
+                    for entrada in entradas:
+                        if isinstance(entrada, dict) and normalize_str(entrada.get("piloto", "")) in identidades:
+                            entrada["piloto"] = nome
+            atualizacoes.append((json.dumps(resultados, ensure_ascii=False),
+                                 json.dumps(auditoria, ensure_ascii=False), camp["id"]))
+        for resultados, auditoria, camp_id in atualizacoes:
+            c.execute("UPDATE championships SET resultados = ?, auditoria = ? WHERE id = ?",
+                      (resultados, auditoria, camp_id))
+        c.execute(
+            "UPDATE pilots SET nome = ?, apelidos = ?, provas = ? WHERE id = ?",
+            (nome, json.dumps(apelidos, ensure_ascii=False), json.dumps(req.provas, ensure_ascii=False), pilot_id)
+        )
+        conn.commit()
+        return {"ok": True, "campeonatos_atualizados": len(atualizacoes)}
+    finally:
+        conn.close()
 
 @app.delete("/api/pilots/{pilot_id}")
 def delete_pilot(pilot_id: int, admin: dict = Depends(require_admin)):

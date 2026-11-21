@@ -1318,7 +1318,10 @@ async function handlePilotSubmit(e) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error("Erro ao salvar piloto.");
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(typeof error.detail === "string" ? error.detail : "Confira os dados do piloto.");
+    }
     closeModal("modalPilotEdit");
     alert("Piloto salvo com sucesso!");
     await loadInitialData();
